@@ -40,6 +40,9 @@ namespace Iocgns {
     // If value is 0, 1, or 2, then do not split along that ordinal
     int m_lineOrdinal{-1};
 
+    // The minimum cell dimension allowed in a decomposition...
+    int m_minCell{2};
+
     int m_zone{0};
 
     // The zone in the undecomposed model that this zone is a

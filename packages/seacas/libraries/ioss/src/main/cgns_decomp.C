@@ -86,6 +86,12 @@ namespace {
       }
 
       {
+        const char *temp = options_.retrieve("minimum_ordinal_cell_count");
+        if (temp != nullptr) {
+          minimum_cell_count = std::stoi(temp);
+        }
+      }
+      {
         const char *temp = options_.retrieve("ordinal");
         if (temp != nullptr) {
           ordinal = std::stoi(temp);
@@ -147,6 +153,8 @@ namespace {
                       nullptr);
       options_.enroll("load_balance", Ioss::GetLongOption::MandatoryValue,
                       "Max ratio of processor work to average. [default 1.4]", nullptr);
+      options_.enroll("minimum_ordinal_cell_count", Ioss::GetLongOption::MandatoryValue,
+                      "Minimum cell count in any ordinal direction", nullptr);
       options_.enroll("verbose", Ioss::GetLongOption::NoValue,
                       "Print additional decomposition information", nullptr);
       options_.enroll("db_type", Ioss::GetLongOption::MandatoryValue,
@@ -159,6 +167,7 @@ namespace {
     Ioss::GetLongOption options_;
     int                 proc_count{0};
     int                 ordinal{-1};
+    int                 minimum_cell_count{2};
     double              load_balance{1.4};
     std::string         filename{};
     std::string         filetype{"cgns"};
@@ -659,9 +668,14 @@ int main(int argc, char *argv[])
     zones.back()->m_zoneConnectivity = iblock->m_zoneConnectivity;
   }
 
-  if (in_type == "cgns") {
-    Iocgns::Utils::set_line_decomposition(dbi->get_file_pointer(), interFace.line_decomposition,
-                                          zones, 0, interFace.verbose);
+  Iocgns::Utils::set_line_decomposition(dbi->get_file_pointer(), interFace.line_decomposition,
+                                        zones, 0, interFace.verbose);
+
+  // Set minimum ordinal cell count (mimimum number of cells in each ordinal direction
+  for (auto zone : zones) {
+    if (zone->is_active()) {
+      zone->m_minCell = interFace.minimum_cell_count;
+    }
   }
 
   region.output_summary(std::cout, false);

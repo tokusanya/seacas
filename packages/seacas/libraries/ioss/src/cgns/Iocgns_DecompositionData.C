@@ -206,6 +206,10 @@ namespace Iocgns {
     if (props.exists("LINE_DECOMPOSITION")) {
       m_lineDecomposition = props.get("LINE_DECOMPOSITION").get_string();
     }
+    if (props.exists("MINIMUM_ORDINAL_CELL_COUNT")) {
+      m_minimumOrdinalCellCount = props.get("MINIMUM_ORDINAL_CELL_COUNT").get_string();
+      fmt::print("Setting minimum ordinal count to {}\n", m_minimumOrdinalCellCount);
+    }
   }
 
   template <typename INT>
@@ -265,6 +269,13 @@ namespace Iocgns {
       else {
         Utils::set_line_decomposition(filePtr, m_lineDecomposition, m_structuredZones, rank,
                                       verbose);
+      }
+    }
+
+    // Set minimum ordinal cell count (mimimum number of cells in each ordinal direction
+    for (auto zone : m_structuredZones) {
+      if (zone->is_active()) {
+        zone->m_minCell = m_minimumOrdinalCellCount;
       }
     }
 

@@ -242,6 +242,7 @@ namespace Iocgns {
 
     double      m_loadBalanceThreshold{1.4};
     std::string m_lineDecomposition{};
+    int         m_minimumOrdinalCellCount{2};
 
     mutable std::map<int, Ioss::FaceUnorderedSet> m_boundaryFaces;
 

@@ -256,11 +256,14 @@ namespace Iocgns {
     size_t work2 = ord2 * m_ordinal[0] * m_ordinal[1];
 
     // Don't decompose along m_lineOrdinal direction and Avoid decompositions 1-cell thick.
-    if (m_lineOrdinal == 0 || m_ordinal[0] == 1 || ord0 == 1 || m_ordinal[0] - ord0 == 1)
+    if (m_lineOrdinal == 0 || m_ordinal[0] == 1 || ord0 < (size_t)m_minCell ||
+        m_ordinal[0] - ord0 < (size_t)m_minCell)
       work0 = 0;
-    if (m_lineOrdinal == 1 || m_ordinal[1] == 1 || ord1 == 1 || m_ordinal[1] - ord1 == 1)
+    if (m_lineOrdinal == 1 || m_ordinal[1] == 1 || ord1 < (size_t)m_minCell ||
+        m_ordinal[1] - ord1 < (size_t)m_minCell)
       work1 = 0;
-    if (m_lineOrdinal == 2 || m_ordinal[2] == 1 || ord2 == 1 || m_ordinal[2] - ord2 == 1)
+    if (m_lineOrdinal == 2 || m_ordinal[2] == 1 || ord2 < (size_t)m_minCell ||
+        m_ordinal[2] - ord2 < (size_t)m_minCell)
       work2 = 0;
 
     auto delta0 = std::make_pair(std::abs((double)work0 - avg_work), -m_ordinal[0]);
@@ -293,7 +296,22 @@ namespace Iocgns {
     }
 
     if (max_ordinal != -1 && (double)max_ordinal_sz / m_ordinal[ordinal] > 1.5) {
+      fmt::print("SQUARE: ordinal {}, ratio:  {} / {}\n", max_ordinal, max_ordinal_sz,
+                 m_ordinal[ordinal]);
       ordinal = max_ordinal;
+    }
+
+    if (ord0 < (size_t)m_minCell || m_ordinal[0] - ord0 < (size_t)m_minCell) {
+      fmt::print("MIN_SIZE: ordinal {}:{}, {} minimum {} {}\n", 0, ordinal, m_ordinal[ordinal],
+                 ord0, m_ordinal[0] - ord0);
+    }
+    if (ord1 < (size_t)m_minCell || m_ordinal[1] - ord1 < (size_t)m_minCell) {
+      fmt::print("MIN_SIZE: ordinal {}:{}, {} minimum {} {}\n", 1, ordinal, m_ordinal[ordinal],
+                 ord1, m_ordinal[1] - ord1);
+    }
+    if (ord2 < (size_t)m_minCell || m_ordinal[2] - ord2 < (size_t)m_minCell) {
+      fmt::print("MIN_SIZE: ordinal {}:{}, {} minimum {} {}\n", 2, ordinal, m_ordinal[ordinal],
+                 ord2, m_ordinal[2] - ord2);
     }
 
     if (m_ordinal[ordinal] <= 1 || (work0 == 0 && work1 == 0 && work2 == 0)) {

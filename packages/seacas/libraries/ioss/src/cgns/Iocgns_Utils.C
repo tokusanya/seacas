@@ -2312,7 +2312,7 @@ void Iocgns::Utils::set_line_decomposition(int cgns_file_ptr, const std::string 
     }
   }
 
-  // Slit into fields using the commas as delimiters
+  // Split into fields using the commas as delimiters
   auto bcs = Ioss::tokenize(line_decomposition, ",");
   for (auto &bc : bcs) {
     Ioss::Utils::fixup_name(bc);
