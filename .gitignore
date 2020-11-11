@@ -14,6 +14,7 @@ inc
 share
 /lib
 /include
+SEACASProjRepoVersion.txt
 SEACAS-Test/*.g3
 SEACAS-Test/baseline.gt
 SEACAS-Test/baseline.mat
@@ -117,6 +118,8 @@ TPL/data-warehouse-release
 TPL/gtest/googletest/
 TPL/hdf5/hdf5-*.tar.bz2/
 TPL/hdf5/hdf5-*/
+TPL/hdf5/argobots/
+TPL/hdf5/async/
 TPL/kokkos/kokkos
 TPL/kokkos/kokkos-*
 TPL/matio/matio/
