@@ -14,6 +14,8 @@ BUILD_TYPE="${BUILD_TYPE:-RELEASE}"
 ### If not, then define "ACCESS" to point to the root of the SEACAS source code.
 ACCESS=$(cd ..; pwd)
 
+FC=${FC:-gfortran}
+
 ### If you do not have the X11 developer package on your system
 ### which provides X11/Xlib.h and the libX11, then change the "ON"
 ### below to "OFF". It will disable blot and fastq
@@ -130,6 +132,7 @@ cmake  \
 -D SEACASExodus_ENABLE_THREADSAFE:BOOL=${THREADSAFE} \
 -D SEACASIoss_ENABLE_THREADSAFE:BOOL=${THREADSAFE} \
 -D TPL_X11_INCLUDE_DIRS:PATH=/opt/local/include \
+-D SEACASProj_ENABLE_Zoltan:BOOL=OFF \
 -D TPL_ENABLE_X11:BOOL=${HAVE_X11} \
 \
 ${KOKKOS_SYMBOLS} \
