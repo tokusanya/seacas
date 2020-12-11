@@ -390,7 +390,10 @@ namespace Ioex {
           exo_method = EX_COMPRESS_ZLIB;
         }
         else if (method == "szip") {
-#if defined(NC_HAS_SZIP_WRITE)
+#if !defined(NC_HAS_SZIP_WRITE)
+#define NC_HAS_SZIP_WRITE 0
+#endif
+#if NC_HAS_SZIP_WRITE
           exo_method = EX_COMPRESS_SZIP;
 #else
           fmt::print(Ioss::WARNING(), "The NetCDF library does not have SZip compression enabled."
@@ -5186,9 +5189,17 @@ int64_t DatabaseIO::put_field_internal(const Ioss::SideBlock *fb, const Ioss::Fi
           Ioss::IntVector side(num_to_get);
           int *           el_side = reinterpret_cast<int *>(data);
 
-          for (size_t i = 0; i < num_to_get; i++) {
-            element[i] = elemMap.global_to_local(el_side[index++]);
-            side[i]    = el_side[index++] + side_offset;
+          try {
+            for (size_t i = 0; i < num_to_get; i++) {
+              element[i] = elemMap.global_to_local(el_side[index++]);
+              side[i]    = el_side[index++] + side_offset;
+            }
+          }
+          catch (const std::runtime_error &x) {
+            std::ostringstream errmsg;
+            fmt::print(errmsg, "{}On SideBlock `{}` while outputting field `elem_side`\n", x.what(),
+                       fb->name());
+            IOSS_ERROR(errmsg);
           }
 
           int ierr = ex_put_partial_set(get_file_pointer(), EX_SIDE_SET, id, offset + 1,
@@ -5202,9 +5213,17 @@ int64_t DatabaseIO::put_field_internal(const Ioss::SideBlock *fb, const Ioss::Fi
           Ioss::Int64Vector side(num_to_get);
           auto *            el_side = reinterpret_cast<int64_t *>(data);
 
-          for (size_t i = 0; i < num_to_get; i++) {
-            element[i] = elemMap.global_to_local(el_side[index++]);
-            side[i]    = el_side[index++] + side_offset;
+          try {
+            for (size_t i = 0; i < num_to_get; i++) {
+              element[i] = elemMap.global_to_local(el_side[index++]);
+              side[i]    = el_side[index++] + side_offset;
+            }
+          }
+          catch (const std::runtime_error &x) {
+            std::ostringstream errmsg;
+            fmt::print(errmsg, "{}On SideBlock `{}` while outputting field `elem_side`\n", x.what(),
+                       fb->name());
+            IOSS_ERROR(errmsg);
           }
 
           int ierr = ex_put_partial_set(get_file_pointer(), EX_SIDE_SET, id, offset + 1,

@@ -605,7 +605,10 @@ namespace Ioex {
           exo_method = EX_COMPRESS_ZLIB;
         }
         else if (method == "szip") {
-#if defined(NC_HAS_SZIP_WRITE)
+#if !defined(NC_HAS_SZIP_WRITE)
+#define NC_HAS_SZIP_WRITE 0
+#endif
+#if NC_HAS_SZIP_WRITE
           exo_method = EX_COMPRESS_SZIP;
 #else
           if (myProcessor == 0) {
