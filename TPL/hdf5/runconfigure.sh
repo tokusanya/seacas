@@ -21,6 +21,12 @@ then
    SZIP_YES_NO="--with-szlib=${INSTALL_PATH}"
 fi
 
+HDF5_ASYNC="${HDF5_ASYNC:-NO}"
+if [ "$HDF5_ASYNC" == "YES" ]
+then
+    ASYNC="--enable-threadsafe --enable-unsupported"
+fi
+
 MPI="${MPI:-NO}"
 if [ "$MPI" == "YES" ]
 then
@@ -80,12 +86,7 @@ else
     USE_SHARED="--disable-shared"
 fi
 
-if [ "${H5VERSION}" == "V18" ]
-then
-    ./configure --prefix=${INSTALL_PATH} ${ZLIB_YES_NO} ${SZIP_YES_NO} ${BUILD_MODE} ${USE_SHARED} ${PARALLEL_YES_NO} --enable-static-exec $1
-else
-    ./configure --prefix=${INSTALL_PATH} ${ZLIB_YES_NO} ${SZIP_YES_NO} ${BUILD_MODE} ${USE_SHARED} ${PARALLEL_YES_NO} --with-default-api-version=v18 --enable-static-exec $1
-fi
+./configure --prefix=${INSTALL_PATH} ${ZLIB_YES_NO} ${SZIP_YES_NO} ${BUILD_MODE} ${USE_SHARED} ${PARALLEL_YES_NO} --enable-static-exec ${ASYNC} $1
 
 echo ""
 echo "         MPI: ${MPI}"

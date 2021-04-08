@@ -74,13 +74,16 @@ PARMETIS=`check_valid PARMETIS`
 METIS=${METIS:-NO}
 METIS=`check_valid METIS`
 
-if [ "$PARMETIS" == "YES" ] 
+if [ "$PARMETIS" == "YES" ]
 then
     METIS="YES"
 fi
 
 GNU_PARALLEL=${GNU_PARALLEL:-YES}
 GNU_PARALLEL=`check_valid GNU_PARALLEL`
+
+HDF5_ASYNC=${HDF5_ASYNC:-NO}
+HDF5_ASYNC=`check_valid HDF5_ASYNC`
 
 NEEDS_ZLIB=${NEEDS_ZLIB:-NO}
 NEEDS_ZLIB=`check_valid NEEDS_ZLIB`
@@ -119,6 +122,14 @@ if [ "${USE_PROXY}" == "YES" ]
 then
     export http_proxy="http://wwwproxy.sandia.gov:80"
     export https_proxy="https://wwwproxy.sandia.gov:80"
+fi
+
+ASYNC_VOL=${ASYNC_VOL:-NO}
+ARGOBOTS=${ARGOBOTS:-NO}
+if [ "${HDF5_ASYNC}" == "YES" ]
+then
+    ASYNC_VOL=YES
+    ARGOBOTS=YES
 fi
 
 pwd
@@ -181,7 +192,7 @@ if [ $# -gt 0 ]; then
 	echo "   ADIOS2       = ${ADIOS2}"
 	echo "   GTEST        = ${GTEST}"
 	echo ""
-	echo "   SUDO         = ${SUDO} (empty unless need superuser permission via 'sudo')" 
+	echo "   SUDO         = ${SUDO} (empty unless need superuser permission via 'sudo')"
 	echo "   JOBS         = ${JOBS}"
 	echo "   VERBOSE      = ${VERBOSE}"
 	echo "${txtrst}"
@@ -343,6 +354,38 @@ then
 	exit 1
     fi
 
+    if [ "$HDF5_ASYNC" == "YES" ]
+    then
+    cd $ACCESS
+    cd TPL/hdf5
+    if [ "$DOWNLOAD" == "YES" ]
+    then
+	echo "${txtgrn}+++ Downloading...${txtrst}"
+        rm -rf hdf5-async
+	git clone https://github.com/hpc-io/hdf5.git hdf5-async
+    fi
+
+    if [ "$BUILD" == "YES" ]
+    then
+	echo "${txtgrn}+++ Configuring, Building, and Installing...${txtrst}"
+        cd hdf5-async
+	git checkout async_vol_register_optional
+	./autogen.sh
+	HDF5_ASYNC=${HDF5_ASYNC} CRAY=${CRAY} H5VERSION=${H5VERSION} DEBUG=${DEBUG} SHARED=${SHARED} NEEDS_ZLIB=${NEEDS_ZLIB} NEEDS_SZIP=${NEEDS_SZIP} MPI=${MPI} bash ../runconfigure.sh
+        if [[ $? != 0 ]]
+        then
+            echo 1>&2 ${txtred}couldn\'t configure hdf5. exiting.${txtrst}
+            exit 1
+        fi
+        make -j${JOBS} && ${SUDO} make "V=${VERBOSE}" install
+        if [[ $? != 0 ]]
+        then
+            echo 1>&2 ${txtred}couldn\'t build hdf5. exiting.${txtrst}
+            exit 1
+        fi
+
+    fi
+    else
     cd $ACCESS
     cd TPL/hdf5
     if [ "$DOWNLOAD" == "YES" ]
@@ -391,9 +434,57 @@ then
             exit 1
         fi
     fi
+fi
 else
     echo "${txtylw}+++ HDF5 already installed.  Skipping download and installation.${txtrst}"
 fi
+
+if [ "$ARGOBOTS" == "YES" ]
+then
+    if [ "$FORCE" == "YES" ] || ! [ -e $INSTALL_PATH/lib/libabt.a ]
+    then
+       echo "${txtgrn}+++ Downloading...${txtrst}"
+        cd $ACCESS
+        cd TPL/hdf5
+       rm -rf argobots
+       git clone https://github.com/pmodels/argobots
+
+       echo "${txtgrn}+++ Configuring, Building, and Installing...Argobots...${txtrst}"
+       cd argobots
+       ./autogen.sh
+       CC=mpicc ./configure --prefix=${INSTALL_PATH}
+       make -j${JOBS} && ${SUDO} make "V=${VERBOSE}" install
+        if [[ $? != 0 ]]
+        then
+            echo 1>&2 ${txtred}couldn\'t build Argobots. exiting.${txtrst}
+            exit 1
+        fi
+
+    else
+       echo "${txtylw}+++ ARGOBOTS already installed.  Skipping download and installation.${txtrst}"
+    fi
+fi
+
+if [ "$ASYNC_VOL" == "YES" ]
+then
+       echo "${txtgrn}+++ Downloading...${txtrst}"
+        cd $ACCESS
+        cd TPL/hdf5
+       rm -rf vol-async
+       git clone --recursive https://github.com/hpc-io/vol-async.git
+       echo "${txtgrn}+++ Configuring, Building, and Installing...Asynchronous VOL connector...${txtrst}"
+       cd vol-async/src
+       CC=mpicc HDF5_DIR=${INSTALL_PATH} ABT_DIR=${INSTALL_PATH} make -e
+        if [[ $? != 0 ]]
+        then
+            echo 1>&2 ${txtred}couldn\'t build Asynchronous VOL connector. exiting.${txtrst}
+            exit 1
+        fi
+       cp libh5async.* ${INSTALL_PATH}/lib/
+else
+    echo "${txtylw}+++ HDF5 ASYNC_VOL already installed.  Skipping download and installation.${txtrst}"
+fi
+
 # =================== INSTALL PnetCDF if parallel build ===============
 if [ "$MPI" == "YES" ]
 then
@@ -867,7 +958,7 @@ then
     echo "${txtgrn}+++ Cereal${txtrst}"
     cd $ACCESS
     CEREAL_DIR="TPL/cereal"
-    if [ ! -d "${CEREAL_DIR}" ]; then 
+    if [ ! -d "${CEREAL_DIR}" ]; then
       mkdir ${CEREAL_DIR}
     fi
     cd ${CEREAL}
