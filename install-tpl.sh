@@ -82,8 +82,8 @@ fi
 GNU_PARALLEL=${GNU_PARALLEL:-YES}
 GNU_PARALLEL=`check_valid GNU_PARALLEL`
 
-HDF5_ASYNC=${HDF5_ASYNC:-NO}
-HDF5_ASYNC=`check_valid HDF5_ASYNC`
+HDF5_VOL=${HDF5_VOL:-NO}
+HDF5_VOL=`check_valid HDF5_VOL`
 
 NEEDS_ZLIB=${NEEDS_ZLIB:-NO}
 NEEDS_ZLIB=`check_valid NEEDS_ZLIB`
@@ -124,11 +124,15 @@ then
     export https_proxy="https://wwwproxy.sandia.gov:80"
 fi
 
-ASYNC_VOL=${ASYNC_VOL:-NO}
+VOL_ASYNC=${VOL_ASYNC:-NO}
+VOL_CACHE=${VOL_CACHE:-NO}
+VOL_PROVENANCE=${VOL_PROVENANCE:-NO}
 ARGOBOTS=${ARGOBOTS:-NO}
-if [ "${HDF5_ASYNC}" == "YES" ]
+if [ "${HDF5_VOL}" == "YES" ]
 then
-    ASYNC_VOL=YES
+    VOL_PROVENANCE=YES
+    VOL_CACHE=YES
+    VOL_ASYNC=YES
     ARGOBOTS=YES
 fi
 
@@ -178,6 +182,7 @@ if [ $# -gt 0 ]; then
 	echo "   USE_PROXY    = ${USE_PROXY}"
 	echo ""
 	echo "   H5VERSION    = ${H5VERSION}"
+	echo "   HDF5_VOL     = ${HDF5_VOL}"
 	echo "   CGNS         = ${CGNS}"
 	echo "   MATIO        = ${MATIO}"
 	echo "   METIS        = ${METIS}"
@@ -354,7 +359,7 @@ then
 	exit 1
     fi
 
-    if [ "$HDF5_ASYNC" == "YES" ]
+    if [ "$HDF5_VOL" == "YES" ]
     then
     cd $ACCESS
     cd TPL/hdf5
@@ -371,7 +376,7 @@ then
         cd hdf5-async
 	git checkout async_vol_register_optional
 	./autogen.sh
-	HDF5_ASYNC=${HDF5_ASYNC} CRAY=${CRAY} H5VERSION=${H5VERSION} DEBUG=${DEBUG} SHARED=${SHARED} NEEDS_ZLIB=${NEEDS_ZLIB} NEEDS_SZIP=${NEEDS_SZIP} MPI=${MPI} bash ../runconfigure.sh
+	HDF5_ASYNC=${HDF5_VOL} CRAY=${CRAY} H5VERSION=${H5VERSION} DEBUG=${DEBUG} SHARED=${SHARED} NEEDS_ZLIB=${NEEDS_ZLIB} NEEDS_SZIP=${NEEDS_SZIP} MPI=${MPI} bash ../runconfigure.sh
         if [[ $? != 0 ]]
         then
             echo 1>&2 ${txtred}couldn\'t configure hdf5. exiting.${txtrst}
@@ -465,24 +470,61 @@ then
     fi
 fi
 
-if [ "$ASYNC_VOL" == "YES" ]
+if [ "$VOL_ASYNC" == "YES" ]
 then
        echo "${txtgrn}+++ Downloading...${txtrst}"
         cd $ACCESS
         cd TPL/hdf5
        rm -rf vol-async
-       git clone --recursive https://github.com/hpc-io/vol-async.git
+       git clone -b async_vol_register_optional --recursive https://github.com/hpc-io/vol-async.git
        echo "${txtgrn}+++ Configuring, Building, and Installing...Asynchronous VOL connector...${txtrst}"
        cd vol-async/src
        CC=mpicc HDF5_DIR=${INSTALL_PATH} ABT_DIR=${INSTALL_PATH} make -e
-        if [[ $? != 0 ]]
-        then
-            echo 1>&2 ${txtred}couldn\'t build Asynchronous VOL connector. exiting.${txtrst}
-            exit 1
-        fi
-       cp libh5async.* ${INSTALL_PATH}/lib/
-else
-    echo "${txtylw}+++ HDF5 ASYNC_VOL already installed.  Skipping download and installation.${txtrst}"
+       if [[ $? != 0 ]]
+       then
+           echo 1>&2 ${txtred}couldn\'t build Asynchronous VOL connector. exiting.${txtrst}
+           exit 1
+       fi
+       mkdir ${INSTALL_PATH}/lib/plugin
+       mkdir ${INSTALL_PATH}/lib/plugin/lib
+       mkdir ${INSTALL_PATH}/lib/plugin/include
+       cp libh5async.* ${INSTALL_PATH}/lib/plugin/lib/
+       cp h5*.h ${INSTALL_PATH}/lib/plugin/include/
+fi
+
+if [ "$VOL_CACHE" == "YES" ]
+then
+       echo "${txtgrn}+++ Downloading...${txtrst}"
+       cd $ACCESS/TPL/hdf5
+       rm -rf vol-cache
+       git clone https://github.com/hpc-io/vol-cache.git
+       echo "${txtgrn}+++ Configuring, Building, and Installing...Cache VOL connector...${txtrst}"
+       cd vol-cache/src
+       CC=mpicc HDF5_ROOT=${INSTALL_PATH} HDF5_VOL_DIR=${INSTALL_PATH}/lib/plugin make -e
+       if [[ $? != 0 ]]
+       then
+           echo 1>&2 ${txtred}couldn\'t build Cache VOL connector. exiting.${txtrst}
+           exit 1
+       fi
+fi
+
+if [ "$VOL_PROVENANCE" == "YES" ]
+then
+       echo "${txtgrn}+++ Downloading...${txtrst}"
+        cd $ACCESS
+        cd TPL/hdf5
+       rm -rf vol-provenance
+       git clone -b async_vol_register_optional  https://github.com/hpc-io/vol-provenance.git
+       echo "${txtgrn}+++ Configuring, Building, and Installing...Provenance VOL connector...${txtrst}"
+       cd vol-provenance
+       CC=mpicc HDF5_DIR=${INSTALL_PATH} SHREXT=so DYNLDFLAGS="-shared" make -e
+       if [[ $? != 0 ]]
+       then
+           echo 1>&2 ${txtred}couldn\'t build Provenance VOL connector. exiting.${txtrst}
+           exit 1
+       fi
+       mkdir ${INSTALL_PATH}/lib/plugin/lib/
+       cp libh5prov.* ${INSTALL_PATH}/lib/plugin/lib/
 fi
 
 # =================== INSTALL PnetCDF if parallel build ===============
