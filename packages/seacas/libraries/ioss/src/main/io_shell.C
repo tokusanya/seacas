@@ -66,8 +66,10 @@ int main(int argc, char *argv[])
 {
   int rank     = 0;
   int num_proc = 1;
+  int mpi_thread_lvl_provided = -1;
+
 #ifdef SEACAS_HAVE_MPI
-  MPI_Init(&argc, &argv);
+  MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &mpi_thread_lvl_provided);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &num_proc);
   ON_BLOCK_EXIT(MPI_Finalize);
