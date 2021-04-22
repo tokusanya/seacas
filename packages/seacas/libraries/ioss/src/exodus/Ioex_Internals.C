@@ -1053,7 +1053,6 @@ int Internals::put_metadata(const Mesh &mesh, const CommunicationMetaData &comm)
 {
   int numdimdim  = 0;
   int numnoddim  = 0;
-  int strdim     = 0;
   int namestrdim = 0;
   int varid      = 0;
   int timedim    = 0;
@@ -1132,21 +1131,12 @@ int Internals::put_metadata(const Mesh &mesh, const CommunicationMetaData &comm)
     }
   }
 
-  // inquire previously defined dimensions
-  int status = nc_inq_dimid(rootid, DIM_STR, &strdim);
-  if (status != NC_NOERR) {
-    ex_opts(EX_VERBOSE);
-    errmsg = fmt::format("Error: failed to get string length in file id {}", exodusFilePtr);
-    ex_err_fn(exodusFilePtr, __func__, errmsg.c_str(), status);
-    return (EX_FATAL);
-  }
-
   /* create name string length dimension */
   if (maximumNameLength < 32) {
     maximumNameLength = 32;
   }
   if (nc_inq_dimid(rootid, DIM_STR_NAME, &namestrdim) != NC_NOERR) {
-    status = nc_def_dim(rootid, DIM_STR_NAME, maximumNameLength + 1, &namestrdim);
+    int status = nc_def_dim(rootid, DIM_STR_NAME, maximumNameLength + 1, &namestrdim);
     if (status != NC_NOERR) {
       ex_opts(EX_VERBOSE);
       errmsg =
@@ -1156,7 +1146,7 @@ int Internals::put_metadata(const Mesh &mesh, const CommunicationMetaData &comm)
     }
   }
 
-  status = nc_def_dim(exodusFilePtr, DIM_NUM_DIM, mesh.dimensionality, &numdimdim);
+  int status = nc_def_dim(exodusFilePtr, DIM_NUM_DIM, mesh.dimensionality, &numdimdim);
   if (status != NC_NOERR) {
     ex_opts(EX_VERBOSE);
     errmsg =
@@ -1889,7 +1879,7 @@ int Internals::put_metadata(const std::vector<ElemBlock> &blocks, bool count_onl
   status = nc_inq_dimid(exodusFilePtr, DIM_STR_NAME, &namestrdim);
   if (status != NC_NOERR) {
     ex_opts(EX_VERBOSE);
-    errmsg = fmt::format("Error: failed to get string length in file id {}", exodusFilePtr);
+    errmsg = fmt::format("Error: failed to get name string length in file id {}", exodusFilePtr);
     ex_err_fn(exodusFilePtr, __func__, errmsg.c_str(), status);
     return (EX_FATAL);
   }
@@ -2126,7 +2116,7 @@ int Internals::put_metadata(const std::vector<FaceBlock> &blocks, bool count_onl
   status = nc_inq_dimid(exodusFilePtr, DIM_STR_NAME, &namestrdim);
   if (status != NC_NOERR) {
     ex_opts(EX_VERBOSE);
-    errmsg = fmt::format("Error: failed to get string length in file id {}", exodusFilePtr);
+    errmsg = fmt::format("Error: failed to get name string length in file id {}", exodusFilePtr);
     ex_err_fn(exodusFilePtr, __func__, errmsg.c_str(), status);
     return (EX_FATAL);
   }
@@ -2905,7 +2895,7 @@ int Internals::put_metadata(const std::vector<NodeSet> &nodesets, bool count_onl
   status = nc_inq_dimid(exodusFilePtr, DIM_STR_NAME, &namestrdim);
   if (status != NC_NOERR) {
     ex_opts(EX_VERBOSE);
-    errmsg = fmt::format("Error: failed to get string length in file id {}", exodusFilePtr);
+    errmsg = fmt::format("Error: failed to get name string length in file id {}", exodusFilePtr);
     ex_err_fn(exodusFilePtr, __func__, errmsg.c_str(), status);
     return (EX_FATAL);
   }
