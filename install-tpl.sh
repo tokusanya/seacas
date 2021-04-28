@@ -510,6 +510,12 @@ fi
 
 if [ "$VOL_PROVENANCE" == "YES" ]
 then
+    if [ "$OS" == "Darwin" ] ; then
+	DYNLD="-dynamiclib -current_version 1.0"
+    else
+	DYNLD="-shared"
+    fi
+
        echo "${txtgrn}+++ Downloading...${txtrst}"
         cd $ACCESS
         cd TPL/hdf5
@@ -517,7 +523,8 @@ then
        git clone -b async_vol_register_optional  https://github.com/hpc-io/vol-provenance.git
        echo "${txtgrn}+++ Configuring, Building, and Installing...Provenance VOL connector...${txtrst}"
        cd vol-provenance
-       CC=mpicc HDF5_DIR=${INSTALL_PATH} SHREXT=so DYNLDFLAGS="-shared" make -e
+       git am ../vol-provenance.patch
+       CC=mpicc HDF5_DIR=${INSTALL_PATH} SHREXT=${LD_EXT} DYNLDFLAGS=${DYNLD} make -e
        if [[ $? != 0 ]]
        then
            echo 1>&2 ${txtred}couldn\'t build Provenance VOL connector. exiting.${txtrst}
