@@ -21,10 +21,9 @@
 #define FMT_HEADER_ONLY
 #endif
 #define FMT_STATIC_THOUSANDS_SEPARATOR ','
-#define FMT_DEPRECATED_N_SPECIFIER
 
 // The fmt library version in the form major * 10000 + minor * 100 + patch.
-#define FMT_VERSION 70102
+#define FMT_VERSION 70103
 
 #ifdef __clang__
 #  define FMT_CLANG_VERSION (__clang_major__ * 100 + __clang_minor__)
@@ -767,7 +766,7 @@ class fixed_buffer_traits {
   explicit fixed_buffer_traits(size_t limit) : limit_(limit) {}
   size_t count() const { return count_; }
   size_t limit(size_t size) {
-    size_t n = limit_ - count_;
+    size_t n = limit_ > count_ ? limit_ - count_ : 0;
     count_ += size;
     return size < n ? size : n;
   }
@@ -790,7 +789,7 @@ class iterator_buffer final : public Traits, public buffer<T> {
  public:
   explicit iterator_buffer(OutputIt out, size_t n = buffer_size)
       : Traits(n),
-        buffer<T>(data_, 0, n < size_t(buffer_size) ? n : size_t(buffer_size)),
+        buffer<T>(data_, 0, buffer_size),
         out_(out) {}
   ~iterator_buffer() { flush(); }
 
@@ -1073,9 +1072,9 @@ template <typename Context> class value {
     custom_value<Context> custom;
     named_arg_value<char_type> named_args;
   };
-
-  constexpr FMT_INLINE value(int val = 0) : int_value(val) {}
-  constexpr FMT_INLINE value(unsigned val) : uint_value(val) {}
+  
+  FMT_INLINE value(int val = 0) : int_value(val) {}
+  FMT_INLINE value(unsigned val) : uint_value(val) {}
   FMT_INLINE value(long long val) : long_long_value(val) {}
   FMT_INLINE value(unsigned long long val) : ulong_long_value(val) {}
   FMT_INLINE value(int128_t val) : int128_value(val) {}

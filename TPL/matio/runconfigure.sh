@@ -7,10 +7,10 @@ if [ "X$ACCESS" == "X" ] ; then
 fi
 INSTALL_PATH=${INSTALL_PATH:-${ACCESS}}
 
-MPI="${MPI:-OFF}"
-if [ "$MPI" == "ON" ]
+MPI="${MPI:-NO}"
+if [ "$MPI" == "YES" ]
 then
-  if [ "$CRAY" == "ON" ]
+  if [ "$CRAY" == "YES" ]
   then
     export CC=cc
   else
@@ -43,17 +43,13 @@ CPPFLAGS='-DNDEBUG'; export CPPFLAGS
 
 # Find hdf5 library...
 LDFLAGS="-L${INSTALL_PATH}/lib"; export LDFLAGS
-if [ "$CRAY" == "ON" ]
+
+SHARED="${SHARED:-YES}"
+if [[ "$SHARED" == "ON" || "$SHARED" == "YES" ]]
 then
-    USE_SHARED="--disable-shared"
+    USE_SHARED="--enable-shared"
 else
-    SHARED="${SHARED:-ON}"
-    if [[ "$SHARED" == "ON" || "$SHARED" == "YES" ]]
-    then
-	USE_SHARED="--enable-shared"
-    else
-	USE_SHARED="--disable-shared"
-    fi
+    USE_SHARED="--disable-shared"
 fi
 
 ./configure --with-hdf5=${INSTALL_PATH} --enable-mat73 ${USE_SHARED} --prefix=${INSTALL_PATH} $1

@@ -17,7 +17,7 @@ else
   BUILD_TYPE="Release"
 fi
 
-SHARED="${SHARED:-ON}"
+SHARED="${SHARED:-YES}"
 if [[ "$SHARED" == "ON" || "$SHARED" == "YES" ]]
 then
   OS=$(uname -s)
@@ -43,11 +43,11 @@ then
    LOCAL_SZIP="-DHDF5_ENABLE_SZIP_SUPPORT:BOOL=${NEEDS_SZIP} -DSZIP_INCLUDE_DIR:PATH=${INSTALL_PATH}/include -DSZIP_LIBRARY:FILEPATH=${INSTALL_PATH}/lib/libsz.${LD_EXT}"
 fi
 
-MPI="${MPI:-OFF}"
-if [ "$MPI" == "ON" ] && [ "$CRAY" = "ON" ]
+MPI="${MPI:-NO}"
+if [ "$MPI" == "YES" ] && [ "$CRAY" = "YES" ]
 then
   export CC=cc
-elif [ "$MPI" == "ON" ]
+elif [ "$MPI" == "YES" ]
 then
   export CC=mpicc
 else
@@ -70,13 +70,6 @@ else
   fi
 fi
 
-if [ "$CRAY" == "ON" ]
-then
-    USE_SHARED="OFF"
-else
-    USE_SHARED="${SHARED}"
-fi
-
 # If using an XLF compiler on an IBM system, may need to add the following:
 # -DCMAKE_Fortran_FLAGS="-qfixed=72" \
 # -DCMAKE_EXE_LINKER_FLAGS:STRING="-lxl -lxlopt"
@@ -84,7 +77,7 @@ fi
 rm -f config.cache
 
 cmake .. -DCMAKE_C_COMPILER:FILEPATH=${CC} \
-         -DBUILD_SHARED_LIBS:BOOL=${USE_SHARED} \
+         -DBUILD_SHARED_LIBS:BOOL=${SHARED} \
          -DBUILD_TESTING:BOOL=OFF \
          -DCMAKE_INSTALL_PREFIX=${INSTALL_PATH} \
 	 -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \

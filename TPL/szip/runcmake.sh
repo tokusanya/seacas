@@ -1,8 +1,8 @@
 #! /usr/bin/env bash
 EXTRA_ARGS=$@
 
-#MPI="${MPI:-ON}"
-MPI="${MPI:-OFF}"
+#MPI="${MPI:-YES}"
+MPI="${MPI:-NO}"
 
 echo "MPI set to ${MPI}"
 
@@ -13,7 +13,7 @@ if [ "X$ACCESS" == "X" ] ; then
 fi
 INSTALL_PATH=${INSTALL_PATH:-${ACCESS}}
 
-SHARED="${SHARED:-ON}"
+SHARED="${SHARED:-YES}"
 DEBUG="${DEBUG:-NO}"
 
 if [ "$DEBUG" == "YES" ]
@@ -23,9 +23,9 @@ else
   BUILD_TYPE="RELEASE"
 fi
 
-if [ "$MPI" == "ON" ]
+if [ "$MPI" == "YES" ]
 then
-  if [ "$CRAY" == "ON" ]
+  if [ "$CRAY" == "YES" ]
   then
     export CC=cc
   else
@@ -58,12 +58,13 @@ OS=$(uname -s)
 rm -f CMakeCache.txt
 
 if [ "$OS" == "Darwin" ] ; then
-  RPATH="-D CMAKE_MACOSX_RPATH:BOOL=ON"
+  RPATH="-D CMAKE_MACOSX_RPATH:BOOL=YES"
 fi
 
 cmake \
 ${RPATH} \
 -D CMAKE_INSTALL_RPATH:PATH=${INSTALL_PATH}/lib \
+-D BUILD_SHARED_LIBS:BOOL=${SHARED} \
 -D CMAKE_INSTALL_LIBDIR:PATH=lib \
 -D CMAKE_INSTALL_PREFIX:PATH=${INSTALL_PATH} \
 -D CMAKE_BUILD_TYPE=${BUILD_TYPE} \

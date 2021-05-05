@@ -4,6 +4,8 @@
 [![Analysis Status](https://scan.coverity.com/projects/2205/badge.svg?flat=1)](https://scan.coverity.com/projects/gsjaardema-seacas)
 [![Spack Version](https://img.shields.io/spack/v/adios2.svg)](https://spack.readthedocs.io/en/latest/package_list.html#seacas)
 [![Appveyor Build](https://ci.appveyor.com/api/projects/status/pis4gok72yh0wwfs/branch/master?svg=true)](https://ci.appveyor.com/project/gsjaardema/seacas/branch/master)
+[![Github Actions -- CI Serial](https://github.com/gsjaardema/seacas/actions/workflows/build_test.yml/badge.svg)](https://github.com/gsjaardema/seacas)
+[![Github Actions -- CI Parallel](https://github.com/gsjaardema/seacas/actions/workflows/build_test_mpi.yml/badge.svg)](https://github.com/gsjaardema/seacas)
 
 * [Get the sources](#get-the-sources)
 * [Build instructions](#build-instructions)
@@ -46,28 +48,28 @@ manually as detailed in
 | Variable        | Values          | Default | Description |
 |-----------------|:---------------:|:-------:|-------------|
 | INSTALL_PATH    | path to install | pwd | Root of install path; default is current location |
-| COMPILER        | clang, gnu, intel, ibm | gnu | What compiler should be used for non-parallel build |
-| MPI             | ON, OFF | OFF | If ON, then build parallel capability |
+| COMPILER        | clang, gnu, intel, ibm | gnu | What compiler should be used for non-parallel build. Must have C++-14 capability. |
+| MPI             | YES, NO | NO  | If YES, then build parallel capability |
 | FORCE           | YES, NO | NO  | Force downloading and building even if lib is already installed. |
 | BUILD           | YES, NO | YES | Should TPLs be built and installed. |
 | DOWNLOAD        | YES, NO | YES | Should TPLs be downloaded. |
 | USE_PROXY       | YES, NO | NO  | Sandia specific -- use proxy when downloading tar files |
 | DEBUG           | YES, NO | NO  | Build debug executable; default is optimized
 | SHARED          | YES, NO | YES | Build shared libraries is YES, archive (.a) if NO |
-| CRAY            | ON, OFF | ON  | Is this a Cray system (special parallel options) |
+| CRAY            | YES, NO | YES | Is this a Cray system (special parallel options) |
 | NEEDS_ZLIB      | YES, NO | NO  | If system does not have zlib installed, download and install it (HDF5 compression). |
 | NEEDS_SZIP      | YES, NO | NO  | If system does not have szip installed, download and install it (HDF5 compression). |
 | USE\_64BIT\_INT | YES, NO | NO  | In CGNS, enable 64-bit integers |
-| CGNS            | ON, OFF | ON  | Should CGNS TPL be built.  |
-| MATIO           | ON, OFF | ON  | Should matio TPL be built. |
-| METIS           | ON, OFF | OFF | Should metis TPL be built (parallel decomposition). |
-| PARMETIS        | ON, OFF | OFF | Should parmetis TPL be built (parallel decomposition). |
-| ADIOS2          | ON, OFF | OFF | Should adios2 TPL be built. |
-| KOKKOS          | ON, OFF | OFF | Should Kokkos TPL be built. |
-| GNU_PARALLEL    | ON, OFF | ON  | Should GNU parallel script be built. |
-| H5VERSION       | V12, V110, V18 | V110 | Use HDF5-1.12.X, HDF5-1.10.X or HDF5-1.8.X |
+| CGNS            | YES, NO | YES | Should CGNS TPL be built.  |
+| MATIO           | YES, NO | YES | Should matio TPL be built. |
+| METIS           | YES, NO | NO  | Should metis TPL be built (parallel decomposition). |
+| PARMETIS        | YES, NO | NO  | Should parmetis TPL be built (parallel decomposition). |
+| ADIOS2          | YES, NO | NO  | Should adios2 TPL be built. |
+| KOKKOS          | YES, NO | NO  | Should Kokkos TPL be built. |
+| GNU_PARALLEL    | YES, NO | YES | Should GNU parallel script be built. |
+| H5VERSION       | V112, V110, V18 | V110 | Use HDF5-1.12.X, HDF5-1.10.X or HDF5-1.8.X |
 | BB              | YES, NO | NO  | Enable Burst Buffer support in PnetCDF |
-| JOBS            | {count}|  2      | Number of "jobs" used for simultaneous compiles |
+| JOBS            | {count}|  2   | Number of "jobs" used for simultaneous compiles |
 | SUDO            | "" or sudo | "" | If need to be superuser to install |
   * NOTE: The `DOWNLOAD` and `BUILD` options can be used to download all TPL source; move to a system with no outside internet access and then build/install the TPLs.
   * The arguments can either be set in the environment as: `export COMPILER=gnu`, or passed on the script invocation line: `COMPILER=gnu ./install-tpl.sh`
@@ -92,18 +94,18 @@ to configure the SEACAS CMake build.
 | INSTALL_PATH    | path to install | pwd | Root of install path; default is current location |
 | BUILDDIR        | {dir}   | `pwd`/build | Directory to do config and build |
 | COMPILER        | clang, gnu, intel, ibm | gnu | What compiler should be used for non-parallel build |
-| SHARED          | ON, OFF | ON  | Build and use shared libraries is ON |
-| APPLICATIONS    | ON, OFF | ON  | Should all SEACAS applications be built (see `cmake-config`) |
-| LEGACY          | ON, OFF | ON  | Should the legacy SEACAS applications be built (see `cmake-config`) |
-| FORTRAN         | ON, OFF | ON  | Should fortran libraries and applications be built (see `cmake-config`) |
-| ZOLTAN          | ON, OFF | ON  | Should zoltan library and nem_slice be built |
+| SHARED          | YES, NO | YES  | Build and use shared libraries is YES |
+| APPLICATIONS    | YES, NO | YES  | Should all SEACAS applications be built (see `cmake-config`) |
+| LEGACY          | YES, NO | YES  | Should the legacy SEACAS applications be built (see `cmake-config`) |
+| FORTRAN         | YES, NO | YES  | Should fortran libraries and applications be built (see `cmake-config`) |
+| ZOLTAN          | YES, NO | YES  | Should zoltan library and nem_slice be built |
 | PYTHON_VER      | 2.7 3.0 | 3.0 | Minimum version of python which should be found |
 | BUILD_TYPE      | debug, release| release | what type of build |
 | DEBUG           | -none- |      | If specified, then do a debug build. Can't be used with `BUILD_TYPE` |
-| HAVE_X11        | ON, OFF | ON  | Does the system have X11 libraries and include files; used for blot, fastq |
-| THREADSAFE      | ON, OFF | OFF | Compile a thread-safe IOSS and Exodus library |
-| USE_SRUN        | ON, OFF | OFF | If MPI enabled, then use srun instead of mpiexec to run parallel tests |
-| DOXYGEN         | ON, OFF | OFF | Run doxygen on several packages during build to generate documentation |
+| HAVE_X11        | YES, NO | YES  | Does the system have X11 libraries and include files; used for blot, fastq |
+| THREADSAFE      | YES, NO | NO | Compile a thread-safe IOSS and Exodus library |
+| USE_SRUN        | YES, NO | NO | If MPI enabled, then use srun instead of mpiexec to run parallel tests |
+| DOXYGEN         | YES, NO | NO | Run doxygen on several packages during build to generate documentation |
 | OMIT_DEPRECATED | YES, NO | NO  | Should the deprecated code be omitted; NO will enable deprecated code |
 | EXTRA_WARNINGS  | YES, NO | NO  | Build with extra warnings enabled; see list in `cmake-config` |
 | SANITIZER       | many    | NO  | If not NO, build using specified sanitizer; see list in `cmake-config` |
@@ -118,17 +120,17 @@ parallel version of the Ioss library.
 
 The only modification to the serial build described above is to make
 sure that the mpicc parallel C compiler is in your path and to add the
-`MPI=ON` argument to the `install-tpl.sh` script invokation when
+`MPI=YES` argument to the `install-tpl.sh` script invocation when
 building the TPLs.  For example:
 ```
-   MPI=ON ./install-tpl.sh
+   MPI=YES ./install-tpl.sh
 ```
 This will download all requested libraries and build them with
 parallel capability enabled (if applicable).  You can then continue
 with the steps outlined in the previous section.
 
 ## Testing
-There are a few unit tests for zoltan, exodus, and aprepro that can be run via `make test` if you configured with `-D SEACASProj_ENABLE_TESTS=ON`.
+There are a few unit tests for zoltan, exodus, and aprepro that can be run via `make test` if you configured with `-D SEACASProj_ENABLE_TESTS=YES`.
 
 There is also a system-level test that just verifies that the applications can read and write exodus files correctly.  This test runs off of the installed applications.  To run do:
 
@@ -165,7 +167,7 @@ cmake -DSEACAS_SOURCE_DIR_OVERRIDE:STRING=seacas/packages/seacas -DTrilinos_ENAB
 ## SPACK
 
 The SPACK package manager (https://spack.io/) can be used to install
-SEACAS and all depedent third-party libaries.  SEACAS is a supported
+SEACAS and all dependent third-party libraries.  SEACAS is a supported
 package in SPACK as of December 2018.
 
 ```
@@ -195,6 +197,7 @@ a separate license:
 | [Tessil Hash](https://github.com/Tessil/) | `packages/seacas/libraries/ioss/src/hash` |  [MIT](https://opensource.org/licenses/MIT) |
 | [Catch2](https://github.com/catchorg/Catch2) | `packages/seacas/libraries/ioss/src/catch.hpp` | [Boost](http://www.boost.org/LICENSE_1_0.txt) |
 | [{fmt}](https://github.com/fmtlib/fmt) | `packages/seacas/libraries/ioss/src/fmt` | [BSD-2-Clause](https://github.com/fmtlib/fmt/blob/master/LICENSE.rst) |
+| [pdqsort](https://github.com/orlp/pdqsort) | `packages/seacas/libraries/ioss/src` | [Zlib License](https://github.com/orlp/pdqsort/blob/master/license.txt) |
 ## Contact information
 
  Greg Sjaardema  (<gsjaardema@gmail.com>, <gdsjaar@sandia.gov>)

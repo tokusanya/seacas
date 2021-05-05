@@ -7,7 +7,7 @@ if [ "X$ACCESS" == "X" ] ; then
 fi
 INSTALL_PATH=${INSTALL_PATH:-${ACCESS}}
 
-SHARED="${SHARED:-ON}"
+SHARED="${SHARED:-YES}"
 if [[ "$SHARED" == "ON" || "$SHARED" == "YES" ]]
 then
   USE_SHARED="1"
@@ -15,10 +15,11 @@ else
   USE_SHARED="0"
 fi
 
-MPI="${MPI:-OFF}"
-if [ "$MPI" == "ON" ]
+MPI="${MPI:-NO}"
+if [ "$MPI" == "YES" ]
 then
-  if [ "$CRAY" == "ON" ]
+  export PARALLEL="--parallel"
+  if [ "$CRAY" == "YES" ]
   then
     export CC=cc
   else
@@ -44,7 +45,15 @@ else
   fi
 fi
 
-make config cc=${CC} prefix=${INSTALL_PATH} shared=${USE_SHARED}
+mkdir build
+cd build
+cmake -DCMAKE_C_COMPILER:FILEPATH=${CC} \
+               -DBUILD_SHARED_LIBS:BOOL=${SHARED} \
+               -DCMAKE_INSTALL_PREFIX=${INSTALL_PATH} \
+               -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ..
+
+cd ..
+#make config cc=${CC} prefix=${INSTALL_PATH} shared=${USE_SHARED}
 
 echo ""
 echo "         MPI: ${MPI}"

@@ -1,4 +1,4 @@
-// Copyright(C) 1999-2020 National Technology & Engineering Solutions
+// Copyright(C) 1999-2021 National Technology & Engineering Solutions
 // of Sandia, LLC (NTESS).  Under the terms of Contract DE-NA0003525 with
 // NTESS, the U.S. Government retains certain rights in this software.
 //
@@ -20,6 +20,7 @@
 #include <Ioss_Quad4.h>
 #include <Ioss_Quad8.h>
 #include <Ioss_Quad9.h>
+#include <Ioss_Sort.h>
 #include <Ioss_Spring2.h>
 #include <Ioss_Spring3.h>
 #include <Ioss_StructuredBlock.h>
@@ -359,7 +360,7 @@ namespace {
     fmt::print("\t+{2:-^{0}}+{2:-^{1}}+\n", max_name, max_face, "");
     for (auto eb : ebs) {
       const std::string &name = eb->name();
-      fmt::print("\t|{2:^{0}}|{3:{1}n}  |\n", max_name, max_face - 2, name,
+      fmt::print("\t|{2:^{0}}|{3:{1}L}  |\n", max_name, max_face - 2, name,
                  boundary_faces[name].size());
     }
     fmt::print("\t+{2:-^{0}}+{2:-^{1}}+\n", max_name, max_face, "");
@@ -863,8 +864,8 @@ void Iocgns::Utils::output_assembly(int file_ptr, const Ioss::Assembly *assembly
   // Now, iterate the members of the assembly and add the reference to the structured block
   if (assembly->get_member_type() == Ioss::STRUCTUREDBLOCK) {
     for (const auto &mem : members) {
-      int         base = mem->get_property("base").get_int();
-      const auto *sb   = dynamic_cast<const Ioss::StructuredBlock *>(mem);
+      base           = mem->get_property("base").get_int();
+      const auto *sb = dynamic_cast<const Ioss::StructuredBlock *>(mem);
       Ioss::Utils::check_dynamic_cast(sb);
       if (is_parallel_io || sb->is_active()) {
         int db_zone = get_db_zone(sb);
@@ -2366,29 +2367,20 @@ void Iocgns::Utils::set_line_decomposition(int cgns_file_ptr, const std::string 
         int sum = (i ? 1 : 0) + (j ? 1 : 0) + (k ? 1 : 0);
         // Only set m_lineOrdinal if only a single ordinal selected.
         if (sum == 1) {
-          int ordinal = -1;
+          unsigned int ordinal = 0;
           if (i) {
-            ordinal = 0;
+            ordinal = Ordinal::I;
           }
           else if (j) {
-            ordinal = 1;
+            ordinal = Ordinal::J;
           }
           else if (k) {
-            ordinal = 2;
+            ordinal = Ordinal::K;
           }
-          if (zone->m_lineOrdinal == -1) {
-            zone->m_lineOrdinal = ordinal;
-            if (verbose && rank == 0) {
-              fmt::print(Ioss::DEBUG(), "Setting line ordinal to {} on {} for surface: {}\n",
-                         zone->m_lineOrdinal, zone->m_name, boconame);
-            }
-          }
-          else if (zone->m_lineOrdinal != ordinal && rank == 0) {
-            fmt::print(
-                Ioss::WARNING(),
-                "CGNS: Zone {0} named {1} has multiple line decomposition ordinal "
-                "specifications. Both ordinal {2} and {3} have been specified.  Keeping {3}\n",
-                izone, zone->m_name, ordinal, zone->m_lineOrdinal);
+          zone->m_lineOrdinal |= ordinal;
+          if (verbose && rank == 0) {
+            fmt::print(Ioss::DEBUG(), "Setting line ordinal to {} on {} for surface: {}\n",
+                       zone->m_lineOrdinal, zone->m_name, boconame);
           }
         }
       }
@@ -2413,8 +2405,8 @@ void Iocgns::Utils::decompose_model(std::vector<Iocgns::StructuredZoneData *> &z
     if (rank == 0) {
       fmt::print(
           Ioss::OUTPUT(),
-          "Decomposing structured mesh with {} zones for {} processors.\nAverage workload is {:n}, "
-          "Load Balance Threshold is {}, Work range {:n} to {:n}\n",
+          "Decomposing structured mesh with {} zones for {} processors.\nAverage workload is {:L}, "
+          "Load Balance Threshold is {}, Work range {:L} to {:L}\n",
           num_active, proc_count, (size_t)avg_work, load_balance_threshold,
           (size_t)(avg_work / load_balance_threshold), (size_t)(avg_work * load_balance_threshold));
     }
@@ -2431,7 +2423,7 @@ void Iocgns::Utils::decompose_model(std::vector<Iocgns::StructuredZoneData *> &z
     if (rank == 0) {
       fmt::print(Ioss::DEBUG(),
                  "========================================================================\n");
-      fmt::print(Ioss::DEBUG(), "Pre-Splitting: (Average = {:n}, LB Threshold = {}\n",
+      fmt::print(Ioss::DEBUG(), "Pre-Splitting: (Average = {:L}, LB Threshold = {}\n",
                  (size_t)avg_work, load_balance_threshold);
     }
   }
@@ -2463,13 +2455,13 @@ void Iocgns::Utils::decompose_model(std::vector<Iocgns::StructuredZoneData *> &z
         if (verbose && rank == 0) {
           fmt::print(Ioss::DEBUG(), "{}",
                      fmt::format(fg(fmt::color::red),
-                                 "\nProcessor {} work: {:n}, workload ratio: {} (exceeds)", i,
+                                 "\nProcessor {} work: {:L}, workload ratio: {} (exceeds)", i,
                                  work_vector[i], workload_ratio));
         }
       }
       else {
         if (verbose && rank == 0) {
-          fmt::print(Ioss::DEBUG(), "\nProcessor {} work: {:n}, workload ratio: {}", i,
+          fmt::print(Ioss::DEBUG(), "\nProcessor {} work: {:L}, workload ratio: {}", i,
                      work_vector[i], workload_ratio);
         }
       }
@@ -2515,7 +2507,7 @@ void Iocgns::Utils::decompose_model(std::vector<Iocgns::StructuredZoneData *> &z
       auto active = std::count_if(zones.begin(), zones.end(),
                                   [](Iocgns::StructuredZoneData *a) { return a->is_active(); });
       if (rank == 0) {
-        fmt::print(Ioss::DEBUG(), "Number of active zones = {}, average work = {:n}\n", active,
+        fmt::print(Ioss::DEBUG(), "Number of active zones = {}, average work = {:L}\n", active,
                    (size_t)avg_work);
         fmt::print(Ioss::DEBUG(),
                    "========================================================================\n");
@@ -2536,10 +2528,10 @@ void Iocgns::Utils::assign_zones_to_procs(std::vector<Iocgns::StructuredZoneData
   std::copy_if(all_zones.begin(), all_zones.end(), std::back_inserter(zones),
                [](Iocgns::StructuredZoneData *z) { return z->is_active(); });
 
-  std::sort(zones.begin(), zones.end(),
-            [](Iocgns::StructuredZoneData *a, Iocgns::StructuredZoneData *b) {
-              return a->work() > b->work();
-            });
+  Ioss::sort(zones.begin(), zones.end(),
+             [](Iocgns::StructuredZoneData *a, Iocgns::StructuredZoneData *b) {
+               return a->work() > b->work();
+             });
 
   std::set<std::pair<int, int>> proc_adam_map;
 
@@ -2561,7 +2553,7 @@ void Iocgns::Utils::assign_zones_to_procs(std::vector<Iocgns::StructuredZoneData
     if (verbose) {
       fmt::print(
           Ioss::DEBUG(),
-          "Assigning zone '{}' with work {:n} to processor {}. Changing work from {:n} to {:n}\n",
+          "Assigning zone '{}' with work {:L} to processor {}. Changing work from {:L} to {:L}\n",
           zone->m_name, zone->work(), zone->m_proc, work_vector[i], zone->work() + work_vector[i]);
     }
     work_vector[i] += zone->work();
@@ -2582,8 +2574,8 @@ void Iocgns::Utils::assign_zones_to_procs(std::vector<Iocgns::StructuredZoneData
         zone->m_proc = proc;
         if (verbose) {
           fmt::print(Ioss::DEBUG(),
-                     "Assigning zone '{}' with work {:n} to processor {}. Changing work from {:n} "
-                     "to {:n}\n",
+                     "Assigning zone '{}' with work {:L} to processor {}. Changing work from {:L} "
+                     "to {:L}\n",
                      zone->m_name, zone->work(), zone->m_proc, work_vector[proc],
                      zone->work() + work_vector[proc]);
         }

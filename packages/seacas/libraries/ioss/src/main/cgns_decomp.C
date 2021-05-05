@@ -1,4 +1,4 @@
-// Copyright(C) 1999-2020 National Technology & Engineering Solutions
+// Copyright(C) 1999-2021 National Technology & Engineering Solutions
 // of Sandia, LLC (NTESS).  Under the terms of Contract DE-NA0003525 with
 // NTESS, the U.S. Government retains certain rights in this software.
 //
@@ -88,12 +88,50 @@ namespace {
       {
         const char *temp = options_.retrieve("ordinal");
         if (temp != nullptr) {
-          ordinal = std::stoi(temp);
-          if (ordinal < 0 || ordinal > 2) {
-            fmt::print(stderr, "\nERROR: Invalid ordinal specified ({}). Must be 0, 1, or 2.\n",
-                       ordinal);
-            exit(EXIT_FAILURE);
-          }
+	  // See if ordinal contains digits or letters...
+	  std::string stemp{temp};
+	  bool all_dig = stemp.find_first_not_of("0123456789") == std::string::npos;
+	  if (all_dig) {
+	    ordinal = std::stoi(stemp);
+	    switch (ordinal) {
+	    case 0: // i
+	      ordinal = Iocgns::Ordinal::I; break;
+	    case 1: // j
+	      ordinal = Iocgns::Ordinal::J; break;
+	    case 2: // k
+	      ordinal = Iocgns::Ordinal::K; break;
+	    case 3: // ij
+	      ordinal = Iocgns::Ordinal::I | Iocgns::Ordinal::J; break;
+	    case 4: // ik
+	      ordinal = Iocgns::Ordinal::I | Iocgns::Ordinal::K; break;
+	    case 5: // jk
+	      ordinal = Iocgns::Ordinal::J | Iocgns::Ordinal::K; break;
+	    default:
+	      fmt::print(stderr,
+			 "\nERROR: Invalid ordinal ('{}') specified.  Must be between 0 and 5.\n", stemp);
+	      options_.usage(std::cerr);
+	      exit(EXIT_FAILURE);
+	    }
+	  }	  
+	  else {
+	    for (size_t i = 0; i < stemp.size(); i++) {
+	      if (stemp[i] == 'i' || stemp[i] == 'I') {
+		ordinal |= Iocgns::Ordinal::I;
+	      }
+	      else if (stemp[i] == 'j' || stemp[i] == 'J') {
+		ordinal |= Iocgns::Ordinal::J;
+	      }
+	      else if (stemp[i] == 'k' || stemp[i] == 'K') {
+		ordinal |= Iocgns::Ordinal::K;
+	      }
+	      else {
+		fmt::print(stderr,
+			   "\nERROR: Invalid ordinal ('{}') specified.  Must be 'i', 'j', or 'k'.\n", stemp[i]);
+		options_.usage(std::cerr);
+		exit(EXIT_FAILURE);
+	      }
+	    }
+	  }
         }
       }
 
@@ -137,7 +175,7 @@ namespace {
       options_.enroll("processors", Ioss::GetLongOption::MandatoryValue, "Number of processors.",
                       nullptr);
       options_.enroll("ordinal", Ioss::GetLongOption::MandatoryValue,
-                      "Ordinal not to split (0,1,2).", nullptr);
+		      "Ordinal not to split 0(i), 1(j), 2(k), 3(ij), 4(ik), or 5(jk).", nullptr);
       options_.enroll("line_decomposition", Ioss::GetLongOption::MandatoryValue,
                       "list of 1 or more BC (Family) names.\n"
                       "\t\tFor all structured zones which this BC touches, the ordinal of the face "
@@ -158,7 +196,7 @@ namespace {
     }
     Ioss::GetLongOption options_;
     int                 proc_count{0};
-    int                 ordinal{-1};
+    int                 ordinal{0};
     double              load_balance{1.4};
     std::string         filename{};
     std::string         filetype{"cgns"};
@@ -458,7 +496,7 @@ namespace {
         }
         postfix += "median";
       }
-      fmt::print("\t{:{}n}..{:{}n} ({:{}n}):\t{:{}}  {}\n", w1, work_width, w2, work_width,
+      fmt::print("\t{:{}L}..{:{}L} ({:{}L}):\t{:{}}  {}\n", w1, work_width, w2, work_width,
                  histogram[i], proc_width, stars, max_star, postfix);
     }
     fmt::print("\n");
@@ -492,8 +530,8 @@ namespace {
     double avg_work  = total_work / (double)proc_count;
 
     // Print work/processor map...
-    fmt::print("\nDecomposing {:n} zones over {:n} processors; Total work = {:n}; Average = "
-               "{:n} (goal)\n",
+    fmt::print("\nDecomposing {:L} zones over {:L} processors; Total work = {:L}; Average = "
+               "{:L} (goal)\n",
                orig_zone_count, proc_count, (size_t)total_work, (size_t)avg_work);
 
     // Get max name length for all zones...
@@ -514,7 +552,7 @@ namespace {
         if (adam_zone->m_parent == nullptr) {
           if (adam_zone->m_child1 == nullptr) {
             // Unsplit...
-            fmt::print("\tZone: {:{}}\t  Proc: {:{}}\tOrd: {:^12}    Work: {:{}n} (unsplit)\n",
+            fmt::print("\tZone: {:{}}\t  Proc: {:{}}\tOrd: {:^12}    Work: {:{}L} (unsplit)\n",
                        adam_zone->m_name, name_len, adam_zone->m_proc, proc_width,
                        fmt::format("{1:{0}} x {2:{0}} x {3:{0}}", ord_width,
                                    adam_zone->m_ordinal[0], adam_zone->m_ordinal[1],
@@ -522,7 +560,7 @@ namespace {
                        adam_zone->work(), work_width);
           }
           else {
-            fmt::print("\tZone: {:{}} is decomposed. \tOrd: {:^12}    Work: {:{}n}\n",
+            fmt::print("\tZone: {:{}} is decomposed. \tOrd: {:^12}    Work: {:{}L}\n",
                        adam_zone->m_name, name_len,
                        fmt::format("{1:{0}} x {2:{0}} x {3:{0}}", ord_width,
                                    adam_zone->m_ordinal[0], adam_zone->m_ordinal[1],
@@ -530,7 +568,7 @@ namespace {
                        adam_zone->work(), work_width);
             for (const auto zone : zones) {
               if (zone->is_active() && zone->m_adam == adam_zone) {
-                fmt::print("\t      {:{}}\t  Proc: {:{}}\tOrd: {:^12}    Work: {:{}n}    SurfExp: "
+                fmt::print("\t      {:{}}\t  Proc: {:{}}\tOrd: {:^12}    Work: {:{}L}    SurfExp: "
                            "{:0.3}\n",
                            zone->m_name, name_len, zone->m_proc, proc_width,
                            fmt::format("{1:{0}} x {2:{0}} x {3:{0}}", ord_width, zone->m_ordinal[0],
@@ -558,13 +596,13 @@ namespace {
       auto pw_copy(proc_work);
       std::nth_element(pw_copy.begin(), pw_copy.begin() + pw_copy.size() / 2, pw_copy.end());
       median = pw_copy[pw_copy.size() / 2];
-      fmt::print("\nWork per processor:\n\tMinimum = {:n}, Maximum = {:n}, Median = {:n}, Ratio = "
+      fmt::print("\nWork per processor:\n\tMinimum = {:L}, Maximum = {:L}, Median = {:L}, Ratio = "
                  "{:.3}\n\n",
                  min_work, max_work, median, (double)(max_work) / min_work);
     }
     if (interFace.work_per_processor) {
       if (min_work == max_work) {
-        fmt::print("\nWork on all processors is {:n}\n\n", min_work);
+        fmt::print("\nWork on all processors is {:L}\n\n", min_work);
       }
       else {
         int max_star = 40;
@@ -575,7 +613,7 @@ namespace {
           int star_cnt =
               (double)(proc_work[i] - min_work) / (max_work - min_work) * delta + min_star;
           std::string stars(star_cnt, '*');
-          std::string format = "\tProcessor {:{}}, work = {:{}n}  ({:.2f})\t{}\n";
+          std::string format = "\tProcessor {:{}}, work = {:{}L}  ({:.2f})\t{}\n";
           if (proc_work[i] == max_work) {
             fmt::print(fg(fmt::color::red), format, i, proc_width, proc_work[i], work_width,
                        proc_work[i] / avg_work, stars);
@@ -592,7 +630,7 @@ namespace {
             for (const auto zone : zones) {
               if ((size_t)zone->m_proc == i) {
                 auto pct = int(100.0 * (double)zone->work() / proc_work[i] + 0.5);
-                fmt::print("\t      {:{}} {:{}n}\t{:3}%\t{:^12}\n", zone->m_name, name_len,
+                fmt::print("\t      {:{}} {:{}L}\t{:3}%\t{:^12}\n", zone->m_name, name_len,
                            zone->work(), work_width, pct,
                            fmt::format("{1:{0}} x {2:{0}} x {3:{0}}", ord_width, zone->m_ordinal[0],
                                        zone->m_ordinal[1], zone->m_ordinal[2]));
@@ -627,15 +665,15 @@ namespace {
                                             });
 
       auto delta = new_nodal_work - nodal_work;
-      fmt::print("Nodal Inflation:\n\tOriginal Node Count = {:n}, Decomposed Node Count = {:n}, "
-                 "Created = {:n}, Ratio = {:.2f}\n\n",
+      fmt::print("Nodal Inflation:\n\tOriginal Node Count = {:L}, Decomposed Node Count = {:L}, "
+                 "Created = {:L}, Ratio = {:.2f}\n\n",
                  nodal_work, new_nodal_work, delta, (double)new_nodal_work / nodal_work);
     }
 
     // Imbalance penalty -- max work / avg work.  If perfect balance, then all processors would have
     // "avg_work" work to do. With current decomposition, every processor has to wait until
     // "max_work" is done.  Penalty = max_work / avg_work.
-    fmt::print("Imbalance Penalty:\n\tMaximum Work = {:n}, Average Work = {:n}, Penalty (max/avg) "
+    fmt::print("Imbalance Penalty:\n\tMaximum Work = {:L}, Average Work = {:L}, Penalty (max/avg) "
                "= {:.2f}\n\n",
                max_work, (size_t)avg_work, (double)max_work / avg_work);
   }
@@ -685,6 +723,7 @@ int main(int argc, char *argv[])
     return EXIT_FAILURE;
   }
 
+  unsigned int line_ordinal = interFace.ordinal;
   std::vector<Iocgns::StructuredZoneData *> zones;
   for (auto iblock : blocks) {
     size_t ni   = iblock->get_property("ni").get_int();
@@ -693,8 +732,8 @@ int main(int argc, char *argv[])
     size_t zone = iblock->get_property("zone").get_int();
 
     zones.push_back(new Iocgns::StructuredZoneData(iblock->name(), zone, ni, nj, nk));
-    if (interFace.ordinal >= 0) {
-      zones.back()->m_lineOrdinal = interFace.ordinal;
+    if (line_ordinal > 0) {
+      zones.back()->m_lineOrdinal = line_ordinal;
     }
     zones.back()->m_zoneConnectivity = iblock->m_zoneConnectivity;
   }
@@ -729,7 +768,7 @@ int main(int argc, char *argv[])
 
   cleanup(zones);
   fmt::print(stderr,
-             "\nTotal Execution time = {:.5} seconds to decompose for {:n} processors. (decomp: "
+             "\nTotal Execution time = {:.5} seconds to decompose for {:L} processors. (decomp: "
              "{:.5}, resolve_zgc: {:.5})\n",
              end2 - begin, interFace.proc_count, end1 - begin, end2 - end1);
   if (valid) {

@@ -16,97 +16,113 @@ txtrst=$(tput sgr0)       # Text reset
 # Which compiler to use?
 export COMPILER=${COMPILER:-gnu}
 
+echo "Compiler set to ${COMPILER}"
+
+if [ "$COMPILER" == "mpi" ]
+then
+    echo "Setting MPI=YES due to COMPILER=mpi"
+    export MPI="YES"
+    export COMPILER=gnu
+fi
+    
 function check_exec()
 {
     local var=$1
     command -v ${var} >/dev/null 2>&1 || { echo >&2 "${txtred}---${var} is required, but is not currently in path.  Aborting TPL Install.${txtrst}"; exit 1; }
 }
 
-function check_valid_yes_no()
+function check_valid()
 {
-    local var=$1
-    if ! [ "${!var}" == "YES" ] && ! [ "${!var}" == "NO" ]; then
-    echo "${txtred}Invalid value for $var (${!var}) -- Must be YES or NO${txtrst}"
+    if [ "${!1}" == "YES" ] || [ "${!1}" == "ON" ]; then
+	echo "YES"
+	return 1
+    fi
+    if [ "${!1}" == "NO" ] || [ "${!1}" == "OFF" ]; then
+	echo "NO"
+	return 1
+    fi
+    echo "${txtred}Invalid value for $1 (${!1}) -- Must be ON, YES, NO, or OFF${txtrst}"
     exit 1
-fi
-}
-
-function check_valid_on_off()
-{
-    local var=$1
-    if ! [ "${!var}" == "ON" ] && ! [ "${!var}" == "OFF" ]; then
-    echo "${txtred}Invalid value for $var (${!var}) -- Must be ON or OFF${txtrst}"
-    exit 1
-fi
 }
 
 #By default, download and then install.
 DOWNLOAD=${DOWNLOAD:-YES}
-check_valid_yes_no DOWNLOAD
+DOWNLOAD=`check_valid DOWNLOAD`
 
 BUILD=${BUILD:-YES}
-check_valid_yes_no BUILD
+BUILD=`check_valid BUILD`
 
 # Force downloading and installation even if the TPL already exists in lib/include
 FORCE=${FORCE:-NO}
-check_valid_yes_no FORCE
+FORCE=`check_valid FORCE`
 
 DEBUG=${DEBUG:-NO}
-check_valid_yes_no DEBUG
+DEBUG=`check_valid DEBUG`
 
 # Shared libraries or static libraries?
 SHARED=${SHARED:-YES}
-check_valid_yes_no SHARED
+SHARED=`check_valid SHARED`
 
 # Enable Burst-Buffer support in PnetCDF?
 BB=${BB:-NO}
-check_valid_yes_no BB
+BB=`check_valid BB`
 
-CRAY=${CRAY:-OFF}
-check_valid_on_off CRAY
+CRAY=${CRAY:-NO}
+CRAY=`check_valid CRAY`
 
 # Which TPLS? (HDF5 and NetCDF always, PnetCDF if MPI=ON)
-CGNS=${CGNS:-ON}
-check_valid_on_off CGNS
+CGNS=${CGNS:-YES}
+CGNS=`check_valid CGNS`
 
-MATIO=${MATIO:-ON}
-check_valid_on_off MATIO
+MATIO=${MATIO:-YES}
+MATIO=`check_valid MATIO`
 
-METIS=${METIS:-OFF}
-check_valid_on_off METIS
+PARMETIS=${PARMETIS:-NO}
+PARMETIS=`check_valid PARMETIS`
 
-PARMETIS=${PARMETIS:-OFF}
-check_valid_on_off PARMETIS
+METIS=${METIS:-NO}
+METIS=`check_valid METIS`
 
-GNU_PARALLEL=${GNU_PARALLEL:-ON}
-check_valid_on_off GNU_PARALLEL
+if [ "$PARMETIS" == "YES" ] 
+then
+    METIS="YES"
+fi
+
+GNU_PARALLEL=${GNU_PARALLEL:-YES}
+GNU_PARALLEL=`check_valid GNU_PARALLEL`
 
 NEEDS_ZLIB=${NEEDS_ZLIB:-NO}
-check_valid_yes_no NEEDS_ZLIB
+NEEDS_ZLIB=`check_valid NEEDS_ZLIB`
 
 NEEDS_SZIP=${NEEDS_SZIP:-NO}
-check_valid_yes_no NEEDS_SZIP
+NEEDS_SZIP=`check_valid NEEDS_SZIP`
 
 USE_AEC=${USE_AEC:-NO}
-check_valid_yes_no USE_AEC
+USE_AEC=`check_valid USE_AEC`
 
-KOKKOS=${KOKKOS:-OFF}
-check_valid_on_off KOKKOS
+KOKKOS=${KOKKOS:-NO}
+KOKKOS=`check_valid KOKKOS`
 
 H5VERSION=${H5VERSION:-V110}
-ADIOS2=${ADIOS2:-OFF}
-check_valid_on_off ADIOS2
 
-GTEST=${GTEST:-OFF}
+FAODEL=${FAODEL:-NO}
+FAODEL=`check_valid FAODEL`
 
-MPI=${MPI:-OFF}
-check_valid_on_off MPI
+ADIOS2=${ADIOS2:-NO}
+ADIOS2=`check_valid ADIOS2`
+
+GTEST=${GTEST:-NO}
+GTEST=`check_valid GTEST`
+
+MPI=${MPI:-NO}
+MPI=`check_valid MPI`
 
 SUDO=${SUDO:-}
 JOBS=${JOBS:-2}
 VERBOSE=${VERBOSE:-1}
+
 USE_PROXY=${USE_PROXY:-NO}
-check_valid_yes_no USE_PROXY
+USE_PROXY=`check_valid USE_PROXY`
 
 if [ "${USE_PROXY}" == "YES" ]
 then
@@ -118,12 +134,14 @@ pwd
 export ACCESS=$(pwd)
 INSTALL_PATH=${INSTALL_PATH:-${ACCESS}}
 
-if [ "$MPI" == "ON" ] && [ "$CRAY" == "ON" ]
+if [ "$MPI" == "YES" ] && [ "$CRAY" == "YES" ]
 then
     CC=cc; export CC
     CFLAGS=-static; export CFLAGS
+    CXX=CC; export CXX
+    CXXFLAGS=-static; export CXXFLAGS
     SHARED=NO
-elif [ "$MPI" == "ON" ]
+elif [ "$MPI" == "YES" ]
 then
     CC=mpicc; export CC
 fi
@@ -145,6 +163,7 @@ if [ $# -gt 0 ]; then
 	echo "${txtcyn}Environment Variables used in the script and their default values:"
 	echo ""
 	echo "   ACCESS       = ${txtgrn}${ACCESS}${txtcyn} (Automatically set to current directory)"
+        echo "   INSTALL_PATH = ${txtgrn}${INSTALL_PATH}${txtcyn}"
 	echo "   OS           = ${txtgrn}${OS}${txtcyn} (Automatically set)"
 	echo "   COMPILER     = ${COMPILER}  (gnu clang intel ibm)"
 	echo "   MPI          = ${MPI} (Parallel Build?)"
@@ -159,16 +178,19 @@ if [ $# -gt 0 ]; then
 	echo "   H5VERSION    = ${H5VERSION}"
 	echo "   CGNS         = ${CGNS}"
 	echo "   MATIO        = ${MATIO}"
+	echo "   METIS        = ${METIS}"
+	echo "   PARMETIS     = ${PARMETIS}"
 	echo "   GNU_PARALLEL = ${GNU_PARALLEL}"
 	echo "   NEEDS_ZLIB   = ${NEEDS_ZLIB}"
 	echo "   NEEDS_SZIP   = ${NEEDS_SZIP}"
 	echo "   USE_AEC      = ${USE_AEC}"
 	echo "   KOKKOS       = ${KOKKOS}"
 	echo "   BB           = ${BB}"
+	echo "   FAODEL       = ${FAODEL}"
 	echo "   ADIOS2       = ${ADIOS2}"
 	echo "   GTEST        = ${GTEST}"
 	echo ""
-	echo "   SUDO         = ${SUDO}"
+	echo "   SUDO         = ${SUDO} (empty unless need superuser permission via 'sudo')" 
 	echo "   JOBS         = ${JOBS}"
 	echo "   VERBOSE      = ${VERBOSE}"
 	echo "${txtrst}"
@@ -323,6 +345,8 @@ then
 	hdf_version="1.10.7"
     elif [ "${H5VERSION}" == "V112" ]; then
 	hdf_version="1.12.0"
+    elif [ "${H5VERSION}" == "develop" ]; then
+	hdf_version="develop"
     else
 	echo 1>&2 ${txtred}Invalid HDF5 version specified: ${H5VERSION}.  Must be one of V18, V110, V112. exiting.${txtrst}
 	exit 1
@@ -342,12 +366,17 @@ then
 	    wget --no-check-certificate https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.10/hdf5-${hdf_version}/src/hdf5-${hdf_version}.tar.bz2
 	elif [ "${H5VERSION}" == "V112" ]; then
 	    wget --no-check-certificate https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.12/hdf5-${hdf_version}/src/hdf5-${hdf_version}.tar.bz2
+	elif [ "${H5VERSION}" == "develop" ]; then
+	    git clone https://github.com/HDFGroup/hdf5.git hdf5-develop
 	else
 	    echo 1>&2 ${txtred}Invalid HDF5 version specified: ${H5VERSION}.  Must be one of V18, V110, V112. exiting.${txtrst}
 	    exit 1
 	fi
-        tar -jxf hdf5-${hdf_version}.tar.bz2
-        rm -f hdf5-${hdf_version}.tar.bz2
+	if [ "${H5VERSION}" != "develop" ]
+	then
+            tar -jxf hdf5-${hdf_version}.tar.bz2
+            rm -f hdf5-${hdf_version}.tar.bz2
+	fi
     fi
 
     if [ "$BUILD" == "YES" ]
@@ -375,7 +404,7 @@ else
     echo "${txtylw}+++ HDF5 already installed.  Skipping download and installation.${txtrst}"
 fi
 # =================== INSTALL PnetCDF if parallel build ===============
-if [ "$MPI" == "ON" ]
+if [ "$MPI" == "YES" ]
 then
     # PnetCDF currently only builds static library...
     if [ "$FORCE" == "YES" ] || ! [ -e $INSTALL_PATH/lib/libpnetcdf.a ]
@@ -407,7 +436,7 @@ then
             fi
 
 
-            if [ "$CRAY" == "ON" ]
+            if [ "$CRAY" == "YES" ]
             then
                 make -j${JOBS} LDFLAGS=-all-static && ${SUDO} make install
             else
@@ -463,7 +492,7 @@ else
     echo "${txtylw}+++ NetCDF already installed.  Skipping download and installation.${txtrst}"
 fi
 # =================== INSTALL CGNS ===============
-if [ "$CGNS" == "ON" ]
+if [ "$CGNS" == "YES" ]
 then
     if [ "$FORCE" == "YES" ] || ! [ -e $INSTALL_PATH/lib/libcgns.${LD_EXT} ]
     then
@@ -481,10 +510,9 @@ then
         then
 	    echo "${txtgrn}+++ Configuring, Building, and Installing...${txtrst}"
             cd CGNS
-            if ! [ -d build ]
-            then
-                mkdir build
-            fi
+            git checkout v4.2.0
+            rm -rf build
+            mkdir build
             cd build
             CRAY=${CRAY} SHARED=${SHARED} DEBUG=${DEBUG} NEEDS_ZLIB=${NEEDS_ZLIB} MPI=${MPI} bash ../../runcmake.sh
             if [[ $? != 0 ]]
@@ -506,7 +534,7 @@ then
 fi
 
 # =================== INSTALL METIS  ===============
-if [ "$METIS" == "ON" ]
+if [ "$METIS" == "YES" ]
 then
     if [ "$FORCE" == "YES" ] || ! [ -e $INSTALL_PATH/lib/libmetis.a ]
     then
@@ -518,23 +546,23 @@ then
 	    echo "${txtgrn}+++ Downloading...${txtrst}"
             rm -rf metis-5.1.0
             rm -f metis-5.1.0.tar.gz
-            wget --no-check-certificate https://github.com/scivision/METIS/raw/master/metis-5.1.0.tar.gz
-	    tar zxvf metis-5.1.0.tar.gz
+            wget --no-check-certificate https://github.com/scivision/METIS/archive/v5.1.0.1.tar.gz
+	    tar zxvf v5.1.0.1.tar.gz
 	fi
 
 	if [ "$BUILD" == "YES" ]
 	then
 	    echo "${txtgrn}+++ Configuring, Building, and Installing...${txtrst}"
-            cd metis-5.1.0
-	    sed 's/TYPEWIDTH 32/TYPEWIDTH 64/' include/metis.h > tmp
-	    mv tmp include/metis.h
+            cd METIS-5.1.0.1
+	    sed 's/TYPEWIDTH 32/TYPEWIDTH 64/' src/include/metis.h > tmp
+	    mv tmp src/include/metis.h
             CRAY=${CRAY} SHARED=${SHARED} DEBUG=${DEBUG} bash ../runconfigure.sh
             if [[ $? != 0 ]]
             then
                 echo 1>&2 ${txtred}couldn\'t configure Metis. exiting.${txtrst}
                 exit 1
             fi
-            make -j${JOBS} && ${SUDO} make install
+            cd build; make -j${JOBS} && ${SUDO} make install
             if [[ $? != 0 ]]
             then
                 echo 1>&2 ${txtred}couldn\'t build Metis. exiting.${txtrst}
@@ -548,7 +576,7 @@ fi
 
 
 # =================== INSTALL PARMETIS  ===============
-if [ "$PARMETIS" == "ON" ] && [ "$MPI" == "ON" ]
+if [ "$PARMETIS" == "YES" ] && [ "$MPI" == "YES" ]
 then
     if [ "$FORCE" == "YES" ] || ! [ -e $INSTALL_PATH/lib/libparmetis.a ]
     then
@@ -586,7 +614,7 @@ fi
 
 
 # =================== INSTALL MATIO  ===============
-if [ "$MATIO" == "ON" ]
+if [ "$MATIO" == "YES" ]
 then
     # Check that aclocal, automake, autoconf exist...
     check_exec aclocal
@@ -629,7 +657,7 @@ then
 fi
 
 # =================== INSTALL KOKKOS  ===============
-if [ "$KOKKOS" == "ON" ]
+if [ "$KOKKOS" == "YES" ]
 then
     if [ "$FORCE" == "YES" ] || ! [ -e $INSTALL_PATH/lib/libkokkos.${LD_EXT} ]
     then
@@ -674,7 +702,7 @@ then
 fi
 
 # =================== INSTALL ADIOS2  ===============
-if [ "$ADIOS2" == "ON" ]
+if [ "$ADIOS2" == "YES" ]
 then
     if [ "$FORCE" == "YES" ] || ! [ -e $INSTALL_PATH/lib/libadios2.${LD_EXT} ]
     then
@@ -716,7 +744,7 @@ then
 fi
 
 # =================== INSTALL gtest  ===============
-if [ "$GTEST" == "ON" ]
+if [ "$GTEST" == "YES" ]
 then
     if [ "$FORCE" == "YES" ] || ! [ -e $INSTALL_PATH/lib/libgtest.${LD_EXT} ]
     then
@@ -758,7 +786,7 @@ then
 fi
 
 # =================== INSTALL PARALLEL  ===============
-if [ "$GNU_PARALLEL" == "ON" ]
+if [ "$GNU_PARALLEL" == "YES" ]
 then
     if [ "$FORCE" == "YES" ] || ! [ -e $INSTALL_PATH/bin/env_parallel ]
     then
@@ -769,7 +797,7 @@ then
         then
 	    echo "${txtgrn}+++ Downloading...${txtrst}"
             rm -rf parallel-*
-            wget --no-check-certificate ftp://ftp.gnu.org/gnu/parallel/parallel-latest.tar.bz2
+            wget --no-check-certificate https://ftp.gnu.org/gnu/parallel/parallel-latest.tar.bz2
             tar -jxf parallel-latest.tar.bz2
             rm -rf parallel-latest.tar.bz2
         fi
@@ -794,6 +822,80 @@ then
     else
 	echo "${txtylw}+++ Parallel already installed.  Skipping download and installation.${txtrst}"
     fi
+fi
+
+# =================== INSTALL FAODEL ===============
+if [ "$FAODEL" == "YES" ]
+then
+  if [ "$FORCE" == "YES" ] || ! [ -e $INSTALL_PATH/lib/libkelpie.a ]
+  then
+    faodel_base="faodel"
+    echo "${txtgrn}+++ Faodel${txtrst}"
+    cd $ACCESS
+    cd TPL/faodel
+    if [ "$DOWNLOAD" == "YES" ]
+    then
+      echo "${txtgrn}+++ Downloading...${txtrst}"
+      rm -rf faodel*
+      git clone git@github.com:faodel/faodel.git
+    fi
+
+    if [ "$BUILD" == "YES" ]
+    then
+      echo "${txtgrn}+++ Configuring, Building, and Installing...${txtrst}"
+      mkdir ${faodel_base}/build
+      cd ${faodel_base}/build
+      echo "------------- ${faodel_base}"
+      echo "------------- $(pwd)"
+      MPI=${MPI} bash ../../runcmake.sh
+      if [[ $? != 0 ]]
+      then
+        echo 1>&2 ${txtred}couldn\'t configure faodel. exiting.${txtrst}
+        exit 1
+      fi
+      make -j${JOBS} && ${SUDO} make install
+      if [[ $? != 0 ]]
+      then
+        echo 1>&2 ${txtred}couldn\'t build faodel. exiting.${txtrst}
+        exit 1
+      fi
+    fi
+  else
+    echo "${txtylw}+++ Faodel already installed.  Skipping download and installation.${txtrst}"
+  fi
+fi
+
+# =================== INSTALL CEREAL ===============
+if [ "$FAODEL" == "YES" ]
+then
+  # Currently, the FAODEL backend requires cereal, so if Faodel is enabled, we'll install cereal, too.
+  if [ "$FORCE" == "YES" ] || ! [ -e $INSTALL_PATH/include/cereal/archives/portable_binary.hpp ]
+  then
+    cereal_base="cereal"
+    echo "${txtgrn}+++ Cereal${txtrst}"
+    cd $ACCESS
+    CEREAL_DIR="TPL/cereal"
+    if [ ! -d "${CEREAL_DIR}" ]; then 
+      mkdir ${CEREAL_DIR}
+    fi
+    cd ${CEREAL}
+    if [ "$DOWNLOAD" == "YES" ]
+    then
+      echo "${txtgrn}+++ Downloading...${txtrst}"
+      rm -rf cereal*
+      wget --no-check-certificate https://github.com/USCiLab/cereal/archive/v1.3.0.tar.gz
+      tar xzf v1.3.0.tar.gz
+      rm -f v1.3.0.tar.gz
+      cp -R cereal-1.3.0/include/cereal $INSTALL_PATH/include/
+    fi
+
+    if [ "$BUILD" == "YES" ]
+    then
+      echo "${txtgrn}+++ Configuring, Building, and Installing...${txtrst}"
+    fi
+  else
+    echo "${txtylw}+++ Cereal already installed.  Skipping download and installation.${txtrst}"
+  fi
 fi
 
 # ==================================
