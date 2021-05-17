@@ -24,7 +24,7 @@ then
     export MPI="YES"
     export COMPILER=gnu
 fi
-    
+
 function check_exec()
 {
     local var=$1
@@ -83,13 +83,21 @@ PARMETIS=`check_valid PARMETIS`
 METIS=${METIS:-NO}
 METIS=`check_valid METIS`
 
-if [ "$PARMETIS" == "YES" ] 
+if [ "$PARMETIS" == "YES" ]
 then
     METIS="YES"
 fi
 
 GNU_PARALLEL=${GNU_PARALLEL:-YES}
 GNU_PARALLEL=`check_valid GNU_PARALLEL`
+
+USE_ZLIB_NG=${USE_ZLIB_NG:-NO}
+USE_ZLIB_NG=`check_valid USE_ZLIB_NG`
+
+if [ "${USE_ZLIB_NG}" == "YES" ]
+then
+    export NEEDS_ZLIB="YES"
+fi
 
 NEEDS_ZLIB=${NEEDS_ZLIB:-NO}
 NEEDS_ZLIB=`check_valid NEEDS_ZLIB`
@@ -182,6 +190,7 @@ if [ $# -gt 0 ]; then
 	echo "   PARMETIS     = ${PARMETIS}"
 	echo "   GNU_PARALLEL = ${GNU_PARALLEL}"
 	echo "   NEEDS_ZLIB   = ${NEEDS_ZLIB}"
+	echo "   USE_ZLIB_NG  = ${USE_ZLIB_NG}"
 	echo "   NEEDS_SZIP   = ${NEEDS_SZIP}"
 	echo "   USE_AEC      = ${USE_AEC}"
 	echo "   KOKKOS       = ${KOKKOS}"
@@ -190,7 +199,7 @@ if [ $# -gt 0 ]; then
 	echo "   ADIOS2       = ${ADIOS2}"
 	echo "   GTEST        = ${GTEST}"
 	echo ""
-	echo "   SUDO         = ${SUDO} (empty unless need superuser permission via 'sudo')" 
+	echo "   SUDO         = ${SUDO} (empty unless need superuser permission via 'sudo')"
 	echo "   JOBS         = ${JOBS}"
 	echo "   VERBOSE      = ${VERBOSE}"
 	echo "${txtrst}"
@@ -298,37 +307,73 @@ if [ "$NEEDS_ZLIB" == "YES" ]
 then
     if [ "$FORCE" == "YES" ] || ! [ -e $INSTALL_PATH/lib/libz.${LD_EXT} ]
     then
-	echo "${txtgrn}+++ ZLIB${txtrst}"
-        zlib_version="1.2.11"
-
-	cd $ACCESS
-	cd TPL
-	if [ "$DOWNLOAD" == "YES" ]
+	if [ "$USE_ZLIB_NG" == "YES" ]
 	then
-	    echo "${txtgrn}+++ Downloading...${txtrst}"
-            rm -rf zlib-${zlib_version}
-            rm -rf zlib-${zlib_version}.tar.gz
-            wget --no-check-certificate https://zlib.net/zlib-${zlib_version}.tar.gz
-            tar -xzf zlib-${zlib_version}.tar.gz
-            rm -rf zlib-${zlib_version}.tar.gz
-	fi
+	    echo "${txtgrn}+++ ZLIB-NG${txtrst}"
+            zlib_ng_version="2.0.2"
 
-	if [ "$BUILD" == "YES" ]
-	then
-	    echo "${txtgrn}+++ Configuring, Building, and Installing...${txtrst}"
-            cd zlib-${zlib_version}
-            ./configure --prefix=${INSTALL_PATH}
-            if [[ $? != 0 ]]
-            then
-		echo 1>&2 ${txtred}couldn\'t configure zlib. exiting.${txtrst}
-		exit 1
-            fi
-            make -j${JOBS} && ${SUDO} make install
-            if [[ $? != 0 ]]
-            then
-		echo 1>&2 ${txtred}couldn\'t build zlib. exiting.${txtrst}
-		exit 1
-            fi
+	    cd $ACCESS
+	    cd TPL
+	    if [ "$DOWNLOAD" == "YES" ]
+	    then
+		echo "${txtgrn}+++ Downloading...${txtrst}"
+		rm -rf zlib-ng
+		git clone https://github.com/zlib-ng/zlib-ng
+	    fi
+
+	    if [ "$BUILD" == "YES" ]
+	    then
+		echo "${txtgrn}+++ Configuring, Building, and Installing...${txtrst}"
+		cd zlib-ng
+		git checkout ${zlib_ng_version}
+		rm -rf build
+		cmake -Bbuild -DCMAKE_INSTALL_PREFIX=${INSTALL_PATH} -DZLIB_COMPAT=YES .
+		if [[ $? != 0 ]]
+		then
+		    echo 1>&2 ${txtred}couldn\'t configure zlib-ng. exiting.${txtrst}
+		    exit 1
+		fi
+		cmake --build build --config Release
+		if [[ $? != 0 ]]
+		then
+		    echo 1>&2 ${txtred}couldn\'t build zlib-ng. exiting.${txtrst}
+		    exit 1
+		fi
+		cmake --install build --config Release
+	    fi
+	else
+	    echo "${txtgrn}+++ ZLIB${txtrst}"
+            zlib_version="1.2.11"
+
+	    cd $ACCESS
+	    cd TPL
+	    if [ "$DOWNLOAD" == "YES" ]
+	    then
+		echo "${txtgrn}+++ Downloading...${txtrst}"
+		rm -rf zlib-${zlib_version}
+		rm -rf zlib-${zlib_version}.tar.gz
+		wget --no-check-certificate https://zlib.net/zlib-${zlib_version}.tar.gz
+		tar -xzf zlib-${zlib_version}.tar.gz
+		rm -rf zlib-${zlib_version}.tar.gz
+	    fi
+
+	    if [ "$BUILD" == "YES" ]
+	    then
+		echo "${txtgrn}+++ Configuring, Building, and Installing...${txtrst}"
+		cd zlib-${zlib_version}
+		./configure --prefix=${INSTALL_PATH}
+		if [[ $? != 0 ]]
+		then
+		    echo 1>&2 ${txtred}couldn\'t configure zlib. exiting.${txtrst}
+		    exit 1
+		fi
+		make -j${JOBS} && ${SUDO} make install
+		if [[ $? != 0 ]]
+		then
+		    echo 1>&2 ${txtred}couldn\'t build zlib. exiting.${txtrst}
+		    exit 1
+		fi
+	    fi
 	fi
     else
 	echo "${txtylw}+++ ZLIB already installed.  Skipping download and installation.${txtrst}"
@@ -470,7 +515,7 @@ then
     then
 	echo "${txtgrn}+++ Configuring, Building, and Installing...${txtrst}"
         cd netcdf-c
-	git checkout v4.7.4
+	git checkout v4.8.0
         rm -rf build
         mkdir build
         cd build
@@ -875,7 +920,7 @@ then
     echo "${txtgrn}+++ Cereal${txtrst}"
     cd $ACCESS
     CEREAL_DIR="TPL/cereal"
-    if [ ! -d "${CEREAL_DIR}" ]; then 
+    if [ ! -d "${CEREAL_DIR}" ]; then
       mkdir ${CEREAL_DIR}
     fi
     cd ${CEREAL}

@@ -146,7 +146,7 @@ if (TPL_ENABLE_MPI)
        DIRECTORY ../../../../applications/exodiff
        NOEXEPREFIX NOEXESUFFIX
        NUM_MPI_PROCS 1
-       
+
     COMM mpi serial
     )
 
@@ -396,7 +396,6 @@ TRIBITS_ADD_ADVANCED_TEST(exodus_append
    TEST_3 EXEC exodiff ARGS -map ${CMAKE_CURRENT_SOURCE_DIR}/test/8-block.g base.g
      DIRECTORY ../../../../applications/exodiff
      NOEXEPREFIX NOEXESUFFIX
-     NUM_MPI_PROCS 1
      NUM_MPI_PROCS 1
   COMM mpi serial
   )
