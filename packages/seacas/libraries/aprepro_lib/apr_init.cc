@@ -194,6 +194,14 @@ namespace SEAMS {
        "Specify an optional path to be prepended to a filename when opening a file.\n\t\t\tCan "
        "also be "
        "specified via the -I command line option when executing aprepro."},
+      {"include", do_include, "include(file)",
+       "Parse the contents of the specified file."},
+      {"Include", do_include, "Include(file)",
+       "Parse the contents of the specified file."},
+      {"cinclude", do_cinclude, "cinclude(file)",
+       "Parse the contents of the specified file. Not an error if file does not exist."},
+      {"Cinclude", do_cinclude, "Cinclude(file)",
+       "Parse the contents of the specified file. Not an error if file does not exist."},
       {"Units", do_Units, "Units(svar)",
        "See manual. svar is one of the defined units "
        "systems:\n\t\t\t'si', 'cgs', 'cgs-ev', 'shock', 'swap', "

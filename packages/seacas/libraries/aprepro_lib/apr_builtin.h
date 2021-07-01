@@ -1,5 +1,5 @@
 /*
- * Copyright(C) 1999-2020 National Technology & Engineering Solutions
+ * Copyright(C) 1999-2021 National Technology & Engineering Solutions
  * of Sandia, LLC (NTESS).  Under the terms of Contract DE-NA0003525 with
  * NTESS, the U.S. Government retains certain rights in this software.
  *
@@ -96,6 +96,8 @@ namespace SEAMS {
   const char *do_file_to_string(char *filename);
   const char *do_error(char *error_string);
   const char *do_include_path(char *new_path);
+  const char *do_include(char *file_path);
+  const char *do_cinclude(char *file_path);
   const char *do_getenv(char *env);
   const char *do_output(char *filename);
   const char *do_append(char *filename);

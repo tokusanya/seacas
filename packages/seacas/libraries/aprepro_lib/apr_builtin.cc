@@ -773,6 +773,16 @@ namespace SEAMS {
     return (nullptr);
   }
 
+  const char *do_include(char *file_path)
+  {
+    return aprepro->lexer->include_handler(file_path, true);
+  }
+
+  const char *do_cinclude(char *file_path)
+  {
+    return aprepro->lexer->include_handler(file_path, false);
+  }
+
   const char *do_intout(double intval)
   {
     // convert 'intval' to a string using an integer format

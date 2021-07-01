@@ -518,48 +518,6 @@ integer {D}+({E})?
     }
   }
 
-<INITIAL>{WS}"{"[Ii]"nclude"{WS}"("           { BEGIN(GET_FILENAME);
-                             file_must_exist = true; }
-<INITIAL>{WS}"{"[Cc]"include"{WS}"("          { BEGIN(GET_FILENAME);
-                             file_must_exist = false; }
-<GET_FILENAME>.+")"{WS}"}"{NL}* {
-  BEGIN(INITIAL);
-  {
-    symrec *s;
-    int quoted = 0;
-    char *pt = strchr(yytext, ')');
-    *pt = '\0';
-    /* Check to see if surrounded by double quote */
-    if ((pt = strchr(yytext, '"')) != nullptr) {
-      yytext++;
-      quoted = 1;
-    }
-    if ((pt = strrchr(yytext, '"')) != nullptr) {
-      *pt = '\0';
-      quoted = 1;
-    }
-
-    if (quoted == 0) {
-      /* See if this is an aprepro variable referring to a name */
-      s = aprepro.getsym(yytext);
-      if (s == nullptr || (s->type != token::SVAR && s->type != token::IMMSVAR)) {
-        pt = yytext;
-      } else {
-        pt = (char*)s->value.svar.c_str();
-      }
-    } else {
-      pt = yytext;
-    }
-
-    add_include_file(pt, file_must_exist);
-
-    if(!aprepro.doIncludeSubstitution)
-      yy_push_state(VERBATIM);
-
-    aprepro.ap_file_list.top().lineno++;
-  }
-}
-
 <PARSING>{integer}  |
 <PARSING>{number}          { sscanf (yytext, "%lf", &yylval->val);
                        return(token::NUM); }
@@ -938,6 +896,30 @@ integer {D}+({E})?
       yyFlexLexer::yypush_buffer_state(yyFlexLexer::yy_create_buffer(ins, new_string.size()));
     }
     return (nullptr);
+  }
+
+  char *Scanner::include_handler(char *string, bool must_exist)
+  {
+    // Eat up the closing '}'
+    int i;
+    while ((i = yyFlexLexer::yyinput()) != '}' && i != EOF)
+      curr_index++; /* eat up values */
+
+    // Add to the history string
+    save_history_string();
+
+    if (switch_skip_to_endcase)
+      BEGIN(END_CASE_SKIP);
+    else
+      BEGIN(if_state[if_lvl]);
+
+    add_include_file(string, must_exist);
+
+    if(!aprepro.doIncludeSubstitution)
+      yy_push_state(VERBATIM);
+
+    aprepro.ap_file_list.top().lineno++;
+    return nullptr;
   }
 
   char *Scanner::if_handler(double x)
