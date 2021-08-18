@@ -190,7 +190,16 @@ namespace {
       info_aliases(region, &nb, false, true);
     }
     Ioss::Utils::info_fields(&nb, Ioss::Field::ATTRIBUTE, prefix + "\tAttributes: ");
-    Ioss::Utils::info_fields(&nb, Ioss::Field::TRANSIENT, prefix + "\tTransient: ");
+    Ioss::Utils::info_fields(&nb, Ioss::Field::TRANSIENT, prefix + "\tTransient:  ");
+
+    if (interFace.compute_bbox()) {
+      Ioss::AxisAlignedBoundingBox bbox = nb.get_bounding_box();
+      fmt::print("\tBounding Box: Minimum X,Y,Z = {:12.4e}\t{:12.4e}\t{:12.4e}\n"
+                 "\t              Maximum X,Y,Z = {:12.4e}\t{:12.4e}\t{:12.4e}\n"
+                 "\t                Range X,Y,Z = {:12.4e}\t{:12.4e}\t{:12.4e}\n",
+                 bbox.xmin, bbox.ymin, bbox.zmin, bbox.xmax, bbox.ymax, bbox.zmax,
+                 bbox.xmax - bbox.xmin, bbox.ymax - bbox.ymin, bbox.zmax - bbox.zmin);
+    }
   }
 
   void info_nodeblock(Ioss::Region &region, const Info::Interface &interFace)
@@ -256,8 +265,10 @@ namespace {
       if (interFace.compute_bbox()) {
         Ioss::AxisAlignedBoundingBox bbox = sb->get_bounding_box();
         fmt::print("\tBounding Box: Minimum X,Y,Z = {:12.4e}\t{:12.4e}\t{:12.4e}\n"
-                   "\t              Maximum X,Y,Z = {:12.4e}\t{:12.4e}\t{:12.4e}\n",
-                   bbox.xmin, bbox.ymin, bbox.zmin, bbox.xmax, bbox.ymax, bbox.zmax);
+                   "\t              Maximum X,Y,Z = {:12.4e}\t{:12.4e}\t{:12.4e}\n"
+                   "\t                Range X,Y,Z = {:12.4e}\t{:12.4e}\t{:12.4e}\n",
+                   bbox.xmin, bbox.ymin, bbox.zmin, bbox.xmax, bbox.ymax, bbox.zmax,
+                   bbox.xmax - bbox.xmin, bbox.ymax - bbox.ymin, bbox.zmax - bbox.zmin);
       }
     }
   }
@@ -333,8 +344,10 @@ namespace {
       if (interFace.compute_bbox()) {
         Ioss::AxisAlignedBoundingBox bbox = eb->get_bounding_box();
         fmt::print("\tBounding Box: Minimum X,Y,Z = {:12.4e}\t{:12.4e}\t{:12.4e}\n"
-                   "\t              Maximum X,Y,Z = {:12.4e}\t{:12.4e}\t{:12.4e}\n",
-                   bbox.xmin, bbox.ymin, bbox.zmin, bbox.xmax, bbox.ymax, bbox.zmax);
+                   "\t              Maximum X,Y,Z = {:12.4e}\t{:12.4e}\t{:12.4e}\n"
+                   "\t                Range X,Y,Z = {:12.4e}\t{:12.4e}\t{:12.4e}\n",
+                   bbox.xmin, bbox.ymin, bbox.zmin, bbox.xmax, bbox.ymax, bbox.zmax,
+                   bbox.xmax - bbox.xmin, bbox.ymax - bbox.ymin, bbox.zmax - bbox.zmin);
       }
     }
   }

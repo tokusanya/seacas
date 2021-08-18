@@ -34,10 +34,8 @@
 #include <Ioss_ConcreteVariableType.h>
 #include <Ioss_Initializer.h>
 #include <transform/Iotr_Initializer.h>
-#ifndef _MSC_VER
-#include <visualization/exodus/Iovs_exodus_IOFactory.h>
 #include <visualization/cgns/Iovs_cgns_IOFactory.h>
-#endif
+#include <visualization/exodus/Iovs_exodus_IOFactory.h>
 
 namespace {
 #if defined(IOSS_THREADSAFE)
@@ -77,7 +75,7 @@ namespace Ioss {
 #endif
 
 #ifndef _MSC_VER
-      Iovs_cgns::IOFactory::factory(); // Visualization Catalyst CGNS
+      Iovs_cgns::IOFactory::factory();   // Visualization Catalyst CGNS
       Iovs_exodus::IOFactory::factory(); // Visualization Catalyst Exodus
 #endif
       Iohb::IOFactory::factory(); // HeartBeat

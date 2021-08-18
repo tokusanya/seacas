@@ -1027,7 +1027,7 @@ const char *  temp_f;
 #pragma diag_suppress code_is_unreachable
 #endif
 
-#define MAX_IF_NESTING 64
+#define MAX_IF_NESTING 1024
 
 int    if_state[MAX_IF_NESTING]    = {0};     // INITIAL
 int    if_case_run[MAX_IF_NESTING] = {false}; /* Has any if or elseif condition executed */
@@ -2109,7 +2109,7 @@ YY_DECL
       {
         // Check if we need to save the substitution history first.
         if (aprepro.ap_options.keep_history && (aprepro.ap_file_list.top().name != "_string_")) {
-          if (curr_index > (size_t)yyleng)
+          if (curr_index > (ssize_t)yyleng)
             hist_start = curr_index - yyleng;
           else
             hist_start = 0;
@@ -3160,7 +3160,18 @@ namespace SEAMS {
     aprepro.outputStream.push(out);
   }
 
-  Scanner::~Scanner() {}
+  Scanner::~Scanner() {
+    while (aprepro.ap_file_list.size() > 1) {
+      auto kk = aprepro.ap_file_list.top();
+      if (kk.name != "STDIN") {
+	yyFlexLexer::yy_load_buffer_state();
+	delete yyin;
+	yyin = nullptr;
+      }
+      aprepro.ap_file_list.pop();
+      yyFlexLexer::yypop_buffer_state();
+    };
+  }
 
   void Scanner::add_include_file(const std::string &filename, bool must_exist)
   {

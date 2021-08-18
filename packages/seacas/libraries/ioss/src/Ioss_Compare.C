@@ -803,7 +803,7 @@ namespace {
   }
 
   bool compare_nodeblock(const Ioss::Region &input_region_1, const Ioss::Region &input_region_2,
-                         const Ioss::MeshCopyOptions &options)
+                         const Ioss::MeshCopyOptions & /* options */)
   {
     bool overall_result = true;
 
@@ -831,9 +831,9 @@ namespace {
   }
 
   template <typename T>
-  bool compare_blocks(const std::vector<T *> &     in_blocks_1,
-                      const std::vector<T *> &     in_blocks_const_2,
-                      const Ioss::MeshCopyOptions &options)
+  bool compare_blocks(const std::vector<T *> &in_blocks_1,
+                      const std::vector<T *> &in_blocks_const_2,
+                      const Ioss::MeshCopyOptions & /* options */)
   {
     bool overall_result = true;
 
@@ -849,7 +849,7 @@ namespace {
 
     if (!in_blocks_1.empty()) {
       for (const auto &in_block_1 : in_blocks_1) {
-        typename std::vector<T *>::const_iterator it;
+        typename std::vector<T *>::iterator it;
         for (it = in_blocks_2.begin(); it != in_blocks_2.end(); it++) {
           if (*(*it) == *in_block_1) {
             break;
@@ -866,7 +866,6 @@ namespace {
         }
       }
     }
-
     return overall_result;
   }
 
@@ -906,9 +905,9 @@ namespace {
     return true;
   }
 
-  bool compare_structuredblocks(const Ioss::Region &         input_region_1,
-                                const Ioss::Region &         input_region_2,
-                                const Ioss::MeshCopyOptions &options)
+  bool compare_structuredblocks(const Ioss::Region &input_region_1,
+                                const Ioss::Region &input_region_2,
+                                const Ioss::MeshCopyOptions & /* options */)
   {
     bool overall_result = true;
 
@@ -950,7 +949,7 @@ namespace {
 
   template <typename T>
   bool compare_sets(const std::vector<T *> &in_sets_1, const std::vector<T *> &in_sets_const_2,
-                    const Ioss::MeshCopyOptions &options)
+                    const Ioss::MeshCopyOptions & /* options */)
   {
     bool overall_result = true;
 
@@ -965,7 +964,7 @@ namespace {
 
     if (!in_sets_1.empty()) {
       for (const auto &in_set_1 : in_sets_1) {
-        typename std::vector<T *>::const_iterator it;
+        typename std::vector<T *>::iterator it;
         for (it = in_sets_2.begin(); it != in_sets_2.end(); it++) {
           if (*(*it) == *in_set_1) {
             break;
@@ -1052,7 +1051,7 @@ namespace {
   }
 
   bool compare_commsets(const Ioss::Region &input_region_1, const Ioss::Region &input_region_2,
-                        const Ioss::MeshCopyOptions &options)
+                        const Ioss::MeshCopyOptions & /* options */)
   {
     bool overall_result = true;
 
@@ -1070,7 +1069,7 @@ namespace {
 
     if (!in_css_1.empty()) {
       for (const auto &in_cs_1 : in_css_1) {
-        typename std::vector<Ioss::CommSet *>::const_iterator it;
+        typename std::vector<Ioss::CommSet *>::iterator it;
         for (it = in_css_2.begin(); it != in_css_2.end(); it++) {
           if (*(*it) == *in_cs_1) {
             break;
@@ -1091,9 +1090,9 @@ namespace {
     return overall_result;
   }
 
-  bool compare_coordinate_frames(const Ioss::Region &         input_region_1,
-                                 const Ioss::Region &         input_region_2,
-                                 const Ioss::MeshCopyOptions &options)
+  bool compare_coordinate_frames(const Ioss::Region &input_region_1,
+                                 const Ioss::Region &input_region_2,
+                                 const Ioss::MeshCopyOptions & /* options */)
   {
     bool overall_result = true;
 
@@ -1112,7 +1111,7 @@ namespace {
 
     if (!in_cfs_1.empty()) {
       for (const auto &in_cf_1 : in_cfs_1) {
-        typename std::vector<Ioss::CoordinateFrame>::const_iterator it;
+        typename std::vector<Ioss::CoordinateFrame>::iterator it;
         for (it = in_cfs_2.begin(); it != in_cfs_2.end(); it++) {
           if ((*it) == in_cf_1) {
             break;

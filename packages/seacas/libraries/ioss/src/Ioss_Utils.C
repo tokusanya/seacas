@@ -5,6 +5,8 @@
 // See packages/seacas/LICENSE for details
 
 #include <Ioss_CodeTypes.h>
+#include <Ioss_DatabaseIO.h>
+#include <Ioss_FileInfo.h>
 #include <Ioss_SubSystem.h>
 #include <Ioss_Utils.h>
 
@@ -604,7 +606,8 @@ namespace {
   // common
   bool define_field(size_t nmatch, size_t match_length, char **names,
                     std::vector<Ioss::Suffix> &suffices, size_t entity_count,
-                    Ioss::Field::RoleType fld_role, std::vector<Ioss::Field> &fields)
+                    Ioss::Field::RoleType fld_role, std::vector<Ioss::Field> &fields,
+                    bool strip_trailing_)
   {
     // Try to define a field of size 'nmatch' with the suffices in 'suffices'.
     // If this doesn't define a known field, then assume it is a scalar instead
@@ -617,6 +620,9 @@ namespace {
       else {
         char *name         = names[0];
         name[match_length] = '\0';
+        if (strip_trailing_ && name[match_length - 1] == '_') {
+          name[match_length - 1] = '\0';
+        }
         Ioss::Field field(name, Ioss::Field::REAL, type, fld_role, entity_count);
         if (field.is_valid()) {
           fields.push_back(field);
@@ -649,12 +655,16 @@ namespace {
 void Ioss::Utils::get_fields(int64_t entity_count, // The number of objects in this entity.
                              char ** names,        // Raw list of field names from exodus
                              size_t  num_names,    // Number of names in list
-                             Ioss::Field::RoleType fld_role, // Role of field
-                             bool enable_field_recognition, const char suffix_separator,
-                             int *local_truth, // Truth table for this entity;
+                             Ioss::Field::RoleType   fld_role, // Role of field
+                             const Ioss::DatabaseIO *db,
+                             int *                   local_truth, // Truth table for this entity;
                              // null if not applicable.
                              std::vector<Ioss::Field> &fields) // The fields that were found.
 {
+  bool enable_field_recognition = db->get_field_recognition();
+  bool strip_trailing_          = db->get_field_strip_trailing_();
+  char suffix_separator         = db->get_field_separator();
+
   if (!enable_field_recognition) {
     // Create a separate field for each name.
     for (size_t i = 0; i < num_names; i++) {
@@ -722,8 +732,8 @@ void Ioss::Utils::get_fields(int64_t entity_count, // The number of objects in t
         }
         else {
 
-          bool multi_component =
-              define_field(nmatch, pmat, &names[ibeg], suffices, entity_count, fld_role, fields);
+          bool multi_component = define_field(nmatch, pmat, &names[ibeg], suffices, entity_count,
+                                              fld_role, fields, strip_trailing_);
           if (!multi_component) {
             // Although we matched multiple suffices, it wasn't a
             // higher-order field, so we only used 1 name instead of
@@ -748,8 +758,8 @@ void Ioss::Utils::get_fields(int64_t entity_count, // The number of objects in t
     // that had been gathered.
     if (ibeg < num_names) {
       if (local_truth == nullptr || local_truth[ibeg] == 1) {
-        bool multi_component =
-            define_field(nmatch, pmat, &names[ibeg], suffices, entity_count, fld_role, fields);
+        bool multi_component = define_field(nmatch, pmat, &names[ibeg], suffices, entity_count,
+                                            fld_role, fields, strip_trailing_);
         clear(suffices);
         if (nmatch > 1 && !multi_component) {
           ibeg++;
@@ -1075,7 +1085,7 @@ bool Ioss::Utils::substr_equal(const std::string &prefix, const std::string &str
 
 std::string Ioss::Utils::uppercase(std::string name)
 {
-  std::transform(name.begin(), name.end(), name.begin(), [](char c) { return std::toupper(c); });
+  std::transform(name.begin(), name.end(), name.begin(), [](char c) { return static_cast<char>(std::toupper(c)); });
   return name;
 }
 
@@ -1306,6 +1316,38 @@ int Ioss::Utils::term_width()
 #endif /* TIOCGSIZE */
   }
   return cols != 0 ? cols : 100;
+}
+
+std::string Ioss::Utils::get_type_from_file(const std::string &filename)
+{
+  Ioss::FileInfo file(filename);
+  auto           extension = file.extension();
+
+  // If the extension is numeric, then we are probably dealing with a single file of a
+  // set of FPP decomposed files (e.g. file.cgns.32.17).  In that case, we tokenize
+  // with "." as delimiter and see if last two tokens are all digits and if there
+  // are at least 4 tokens (basename.extension.#proc.proc)...
+  bool all_dig = extension.find_first_not_of("0123456789") == std::string::npos;
+  if (all_dig) {
+    auto tokens = Ioss::tokenize(filename, ".");
+    if (tokens.size() >= 4) {
+      auto proc_count = tokens[tokens.size() - 2];
+      if (proc_count.find_first_not_of("0123456789") == std::string::npos) {
+        extension = tokens[tokens.size() - 3];
+      }
+    }
+  }
+
+  if (extension == "e" || extension == "g" || extension == "gen" || extension == "exo") {
+    return "exodus";
+  }
+  else if (extension == "cgns") {
+    return "cgns";
+  }
+  else {
+    // "exodus" is default...
+    return "exodus";
+  }
 }
 
 void Ioss::Utils::info_fields(const Ioss::GroupingEntity *ige, Ioss::Field::RoleType role,

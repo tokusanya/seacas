@@ -134,8 +134,8 @@ USE_PROXY=`check_valid USE_PROXY`
 
 if [ "${USE_PROXY}" == "YES" ]
 then
-    export http_proxy="http://wwwproxy.sandia.gov:80"
-    export https_proxy="https://wwwproxy.sandia.gov:80"
+    export http_proxy="http://proxy.sandia.gov:80"
+    export https_proxy="https://proxy.sandia.gov:80"
 fi
 
 pwd
@@ -310,7 +310,7 @@ then
 	if [ "$USE_ZLIB_NG" == "YES" ]
 	then
 	    echo "${txtgrn}+++ ZLIB-NG${txtrst}"
-            zlib_ng_version="2.0.2"
+            zlib_ng_version="develop"
 
 	    cd $ACCESS
 	    cd TPL
@@ -511,11 +511,17 @@ then
         git clone https://github.com/Unidata/netcdf-c netcdf-c
     fi
 
+#   net_version="v4.8.0"
+   net_version="master"
+
     if [ "$BUILD" == "YES" ]
     then
 	echo "${txtgrn}+++ Configuring, Building, and Installing...${txtrst}"
         cd netcdf-c
-	git checkout v4.8.0
+	if [ "$net_version" != "master" ]
+	   then
+	       git checkout $net_version
+	fi
         rm -rf build
         mkdir build
         cd build

@@ -57,6 +57,20 @@
     Iocgns::Utils::cgns_error(file_ptr, __FILE__, __func__, __LINE__, -1);                         \
   }
 
+#ifdef _WIN32
+#ifdef _MSC_VER
+#define strncasecmp strnicmp
+#endif
+char *strcasestr(char *haystack, const char *needle)
+{
+  char *c;
+  for (c = haystack; *c; c++)
+    if (!strncasecmp(c, needle, strlen(needle)))
+      return c;
+  return 0;
+}
+#endif
+
 namespace {
   int power_2(int count)
   {
@@ -164,7 +178,7 @@ namespace {
     ssize_t min_proc = -1;
     for (ssize_t i = 0; i < (ssize_t)work.size(); i++) {
       if (work[i] < min_work &&
-          proc_adam_map.find(std::make_pair(zone->m_adam->m_zone, i)) == proc_adam_map.end()) {
+          proc_adam_map.find(std::make_pair(zone->m_adam->m_zone, static_cast<int>(i))) == proc_adam_map.end()) {
         min_work = work[i];
         min_proc = i;
         if (min_work == 0) {
@@ -547,7 +561,12 @@ int Iocgns::Utils::get_db_zone(const Ioss::GroupingEntity *entity)
   IOSS_ERROR(errmsg);
 }
 
-size_t Iocgns::Utils::index(const Ioss::Field &field) { return field.get_index() & 0xffffffff; }
+namespace {
+  const size_t CG_CELL_CENTER_FIELD_ID = 1ul << 30;
+  const size_t CG_VERTEX_FIELD_ID      = 1ul << 31;
+} // namespace
+
+size_t Iocgns::Utils::index(const Ioss::Field &field) { return field.get_index() & 0x00ffffff; }
 
 void Iocgns::Utils::set_field_index(const Ioss::Field &field, size_t index,
                                     CG_GridLocation_t location)
@@ -1238,7 +1257,8 @@ size_t Iocgns::Utils::common_write_meta_data(int file_ptr, const Ioss::Region &r
     std::set<std::string> zgc_names;
 
     for (const auto &zgc : sb->m_zoneConnectivity) {
-      if (zgc.is_valid() && zgc.is_active()) {
+      if (zgc.is_valid() &&
+          (zgc.is_active() || (!is_parallel && zgc.m_donorProcessor != zgc.m_ownerProcessor))) {
         int                     zgc_idx = 0;
         std::array<cgsize_t, 6> owner_range{{zgc.m_ownerRangeBeg[0], zgc.m_ownerRangeBeg[1],
                                              zgc.m_ownerRangeBeg[2], zgc.m_ownerRangeEnd[0],
@@ -2154,8 +2174,7 @@ void Iocgns::Utils::finalize_database(int cgns_file_ptr, const std::vector<doubl
 }
 
 void Iocgns::Utils::add_transient_variables(int cgns_file_ptr, const std::vector<double> &timesteps,
-                                            Ioss::Region *region, bool enable_field_recognition,
-                                            char suffix_separator, int myProcessor,
+                                            Ioss::Region *region, int myProcessor,
                                             bool is_parallel_io)
 {
   // ==========================================
@@ -2195,7 +2214,7 @@ void Iocgns::Utils::add_transient_variables(int cgns_file_ptr, const std::vector
       if (grid_loc == CG_CellCenter) {
         size_t entity_count = block->entity_count();
         Ioss::Utils::get_fields(entity_count, field_names, field_count, Ioss::Field::TRANSIENT,
-                                enable_field_recognition, suffix_separator, nullptr, fields);
+                                region->get_database(), nullptr, fields);
         size_t index = 1;
         for (const auto &field : fields) {
           Utils::set_field_index(field, index, grid_loc);
@@ -2212,7 +2231,7 @@ void Iocgns::Utils::add_transient_variables(int cgns_file_ptr, const std::vector
         auto * nb           = const_cast<Ioss::NodeBlock *>(cnb);
         size_t entity_count = nb->entity_count();
         Ioss::Utils::get_fields(entity_count, field_names, field_count, Ioss::Field::TRANSIENT,
-                                enable_field_recognition, suffix_separator, nullptr, fields);
+                                region->get_database(), nullptr, fields);
         size_t index = 1;
         for (const auto &field : fields) {
           Utils::set_field_index(field, index, grid_loc);

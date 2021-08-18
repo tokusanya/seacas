@@ -2,7 +2,11 @@
 name: SEACAS Variant builds
 
 # Controls when the action will run. Triggers the workflow on push
-on:  [ push, pull_request ]
+on: 
+  push:
+    branches-ignore:
+      - 'coverity'
+  pull_request:
 
 jobs:
 
@@ -143,8 +147,8 @@ jobs:
             threadsafe: "NO",
             use_kokkos: "NO",
             use_adios2: "NO",
-            fortran: "YES",
-            extra: "",
+            fortran: "NO",
+            extra: "APPLICATIONS=NO LEGACY=NO",
             sanitizer: "NO" # address, integer, thread, memory, undefined
           }
         - {

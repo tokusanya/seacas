@@ -24,6 +24,7 @@
 #include <exodusII.h>
 
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <cstddef>
 #include <cstdlib>
@@ -288,7 +289,7 @@ namespace {
 
   template <typename INT>
   void create_adjacency_list(const Ioss::Region &region, std::vector<idx_t> &pointer,
-                             std::vector<idx_t> &adjacency, INT /*dummy*/)
+                             std::vector<idx_t> &adjacency, INT dummy)
   {
     progress(__func__);
     // Size of pointer list is element count + 1;
