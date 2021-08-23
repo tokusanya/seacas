@@ -74,6 +74,7 @@ build_script:
      -DTPL_ENABLE_Pamgen:BOOL=OFF ^
      -DTPL_ENABLE_Pthread:BOOL=OFF ^
      -DTPL_ENABLE_X11:BOOL=OFF ^
+     -DCMAKE_SH="CMAKE_SH-NOTFOUND" ^
      -DTPL_ENABLE_gtest:BOOL=OFF
 
   - cmd: if errorlevel 1 exit 1
