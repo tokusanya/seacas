@@ -16,7 +16,7 @@ int main(int, char **)
   SEAMS::Aprepro aprepro;
 
   aprepro.ap_options.warning_msg = false;
-  SEAMS::symrec *ptr = aprepro.getsym("_FORMAT");
+  SEAMS::symrec *ptr             = aprepro.getsym("_FORMAT");
   if (ptr != nullptr) {
     ptr->value.svar = "%.10g";
   }
