@@ -1498,7 +1498,6 @@ namespace Ioex {
           }
           if (ss_name[0] != '\0') {
             Ioss::Utils::fixup_name(ss_name.data());
-            Ioex::decode_surface_name(ss_map, ss_set, ss_name.data());
           }
         }
       }
@@ -2050,11 +2049,9 @@ namespace Ioex {
           size_t               ep_data_size = ent_proc.size() * sizeof(int64_t);
           get_field_internal(css, ep_field, ent_proc.data(), ep_data_size);
           for (size_t i = 0; i < ent_proc.size(); i += 2) {
-            int64_t node = ent_proc[i + 0];
-            int64_t proc = ent_proc[i + 1];
-            if (proc < idata[node - 1]) {
-              idata[node - 1] = proc;
-            }
+            int64_t node    = ent_proc[i + 0];
+            int64_t proc    = ent_proc[i + 1];
+            idata[node - 1] = std::min(idata[node - 1], static_cast<int>(proc));
           }
         }
         else {
@@ -2064,11 +2061,9 @@ namespace Ioex {
           size_t           ep_data_size = ent_proc.size() * sizeof(int);
           get_field_internal(css, ep_field, ent_proc.data(), ep_data_size);
           for (size_t i = 0; i < ent_proc.size(); i += 2) {
-            int node = ent_proc[i + 0];
-            int proc = ent_proc[i + 1];
-            if (proc < idata[node - 1]) {
-              idata[node - 1] = proc;
-            }
+            int node        = ent_proc[i + 0];
+            int proc        = ent_proc[i + 1];
+            idata[node - 1] = std::min(idata[node - 1], proc);
           }
         }
       }

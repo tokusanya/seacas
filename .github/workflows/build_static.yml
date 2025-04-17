@@ -1,8 +1,17 @@
-name: coverity-scan
+name: Static Build
+
 on:
   push:
     branches:
-      - coverity
+    - master
+  pull_request:
+    branches:
+    - master
+
+concurrency:  
+  group: ${{ github.workflow}}-${{ github.head_ref }}  
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -14,7 +23,7 @@ jobs:
 
     strategy:
       matrix:
-        compiler: [ gnu ]
+        compiler: [ gnu, clang, mpi ]
         hdf5: [ V114 ]
         netcdf: [ 4.9.3 ]
         cgns: [ 4.4.0 ]
@@ -39,14 +48,14 @@ jobs:
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
           path: ~/environments/${{ matrix.compiler }}-${{ matrix.hdf5 }}-${{ matrix.netcdf }}-${{ matrix.cgns }}
-          key: TPL-v4-${{ runner.os }}-${{ matrix.compiler }}-${{ matrix.hdf5 }}-${{ matrix.netcdf }}-${{ matrix.cgns }}
+          key: TPL-static-v4-${{ runner.os }}-${{ matrix.compiler }}-${{ matrix.hdf5 }}-${{ matrix.netcdf }}-${{ matrix.cgns }}
 
       - name: Build TPL-${{ matrix.compiler }}-${{ matrix.hdf5 }}-${{ matrix.netcdf }}-${{ matrix.cgns }}
         if: steps.cache-TPL.outputs.cache-hit != 'true'
         run: |
           echo $HOME
           set -x
-          COMPILER=${{ matrix.compiler }} H5VERSION=${{ matrix.hdf5}} GNU_PARALLEL=OFF INSTALL_PATH=${HOME}/environments/${{ matrix.compiler }}-${{ matrix.hdf5 }}-${{ matrix.netcdf }}-${{ matrix.cgns }} ./install-tpl.sh
+          SHARED=NO STATIC=YES COMPILER=${{ matrix.compiler }} H5VERSION=${{ matrix.hdf5}} GNU_PARALLEL=OFF INSTALL_PATH=${HOME}/environments/${{ matrix.compiler }}-${{ matrix.hdf5 }}-${{ matrix.netcdf }}-${{ matrix.cgns }} ./install-tpl.sh
           ls ${HOME} && ls ${HOME}/environments && ls ${HOME}/environments/${{ matrix.compiler }}-${{ matrix.hdf5 }}-${{ matrix.netcdf }}-${{ matrix.cgns }} && ls ${HOME}/environments/${{ matrix.compiler }}-${{ matrix.hdf5 }}-${{ matrix.netcdf }}-${{ matrix.cgns }}/lib
 
 ###
@@ -60,7 +69,7 @@ jobs:
 
     strategy:
       matrix:
-        compiler: [ gnu ]
+        compiler: [ gnu, clang, mpi ]
         hdf5: [ V114 ]
         netcdf: [ 4.9.3 ]
         cgns: [ 4.4.0 ]
@@ -82,7 +91,7 @@ jobs:
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
           path: ~/environments/${{ matrix.compiler }}-${{ matrix.hdf5 }}-${{ matrix.netcdf }}-${{ matrix.cgns }}
-          key: TPL-v4-${{ runner.os }}-${{ matrix.compiler }}-${{ matrix.hdf5 }}-${{ matrix.netcdf }}-${{ matrix.cgns }}
+          key: TPL-static-v4-${{ runner.os }}-${{ matrix.compiler }}-${{ matrix.hdf5 }}-${{ matrix.netcdf }}-${{ matrix.cgns }}
 
       - name: Check Cache
         shell: bash -l {0}
@@ -91,13 +100,14 @@ jobs:
 ###
 # Configure and build
 ###
-      - name: Download Coverity Build Tool
-        run: |
-          wget -q https://scan.coverity.com/download/linux64 --post-data "token=$TOKEN&project=gsjaardema%2Fseacas" -O coverity_tool.tgz
-          mkdir cov-analysis-linux64
-          tar xzf coverity_tool.tgz --strip 1 -C cov-analysis-linux64
-        env:
-          TOKEN: ${{ secrets.COVERITY_SCAN_TOKEN }}
+      - name: Setup Python
+        uses: actions/setup-python@8d9ed9ac5c53483de85588cdf95a591a75ab9f55 # v5.5.0
+        with:
+          python-version: '3.11'
+
+      - name: Install NumPy
+        shell: bash -l {0}
+        run: pip install numpy
 
       - name: Run cmake
         shell: bash -l {0}
@@ -105,28 +115,25 @@ jobs:
           echo $HOME
           mkdir build
           cd build
-          ZOLTAN=NO INSTALL_PATH=${HOME}/environments/${{ matrix.compiler }}-${{ matrix.hdf5 }}-${{ matrix.netcdf }}-${{ matrix.cgns }} bash ../cmake-config coverity
+          SHARED=NO STATIC=YES NUMPROCS=2 COMPILER=${{ matrix.compiler }} INSTALL_PATH=${HOME}/environments/${{ matrix.compiler }}-${{ matrix.hdf5 }}-${{ matrix.netcdf }}-${{ matrix.cgns }} bash ../cmake-config
 
       - name: Build
         shell: bash -l {0}
         run: |
           cd build
-          mkdir cov-int
-          ../cov-analysis-linux64/bin/cov-build --dir cov-int make -j 4
+          make -j 4
         if: ${{ success() }}
 
-      - name: Submit the result to Coverity Scan
+      - name: Install
+        shell: bash -l {0}
         run: |
           cd build
-          tail cov-int/build-log.txt
-          tar czf seacas.tgz cov-int
-          curl \
-             --form token="$TOKEN" \
-             --form email=gsjaardema@gmail.com \
-             --form file=@seacas.tgz \
-             --form version="master" \
-             --form description="SEACAS Github Actions Coverity Scan" \
-               https://scan.coverity.com/builds?project=gsjaardema%2Fseacas
-        env:
-          TOKEN: ${{ secrets.COVERITY_SCAN_TOKEN }}
+          make -j 4 install
+        if: ${{ success() }}
+
+      - name: Run Tests
+        shell: bash -l {0}
+        run: |
+          cd build
+          ctest -j 4 --output-on-failure
         if: ${{ success() }}

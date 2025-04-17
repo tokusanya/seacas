@@ -606,7 +606,16 @@ then
         then
             echo "${txtgrn}+++ Configuring, Building, and Installing...${txtrst}"
             cd CGNS || exit
-	    git am ../CGNS-Allow-more-liberal-version-matching.patch
+            patch -p1 < ../CGNS-Allow-more-liberal-version-matching.patch
+            if [[ $? != 0 ]]
+            then
+                echo 1>&2 ${txtred}Problems applying CGNS Version patch. Continuing, but look here if errors building. Files written may not be readable by older libraries.${txtrst}
+            fi
+            patch < ../CGNS-ZLIB.patch
+            if [[ $? != 0 ]]
+            then
+                echo 1>&2 ${txtred}Problems applying CGNS ZLIB patch.${txtrst}
+            fi
             rm -rf build
             mkdir build
             cd build || exit
@@ -852,7 +861,7 @@ if [ "$ADIOS2" == "YES" ]
 then
     if [ "$FORCE" == "YES" ] || [ "$FORCE_ADIOS2" == "YES" ] || ! [ -e $INSTALL_PATH/lib/libadios2_c.${LD_EXT} ]
     then
-	adios2_version="v2.10.1"
+	adios2_version="v2.10.2"
         echo "${txtgrn}+++ ADIOS2 ${adios2_version} ${txtrst}"
         cd $ACCESS || exit
         cd TPL/adios2 || exit
@@ -978,7 +987,7 @@ if [ "$CATCH2" == "YES" ]
 then
     if [ "$FORCE" == "YES" ] || [ "$FORCE_CATCH2" == "YES" ] || ! [ -e $INSTALL_PATH/lib/libCatch2.a ]
     then
-        catch2_version="v3.8.0"
+        catch2_version="v3.8.1"
         echo "${txtgrn}+++ Catch2 ${catch2_version} ${txtrst}"
         cd $ACCESS || exit
         cd TPL/catch2 || exit
