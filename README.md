@@ -1,7 +1,6 @@
 # SEACAS  [[Documentation](http://sandialabs.github.io/seacas-docs/)] [[Wiki](https://github.com/sandialabs/seacas/wiki)]
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/838c6d845e9e4ce4a7cd02bd06b4d2ad)](https://www.codacy.com/gh/gsjaardema/seacas/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=gsjaardema/seacas&amp;utm_campaign=Badge_Grade)
 [![Analysis Status](https://scan.coverity.com/projects/2205/badge.svg?flat=1)](https://scan.coverity.com/projects/gsjaardema-seacas)
-[![Spack Version](https://img.shields.io/spack/v/adios2.svg)](https://spack.readthedocs.io/en/latest/package_list.html#seacas)
 [![Appveyor Build](https://ci.appveyor.com/api/projects/status/pis4gok72yh0wwfs/branch/master?svg=true)](https://ci.appveyor.com/project/gsjaardema/seacas/branch/master)
 [![SEACAS Docker](https://img.shields.io/github/actions/workflow/status/sandialabs/seacas/docker-seacas.yml?branch=master&label=SEACAS&logo=docker&logoColor=0db7ed)](https://hub.docker.com/r/mrbuche/seacas)
 [![Exodus Docker](https://img.shields.io/github/actions/workflow/status/sandialabs/seacas/docker-exodus.yml?branch=master&label=Exodus&logo=docker&logoColor=0db7ed)](https://hub.docker.com/r/mrbuche/exodus)
@@ -9,6 +8,10 @@
 [![Github Actions -- CI Variants](https://github.com/sandialabs/seacas/actions/workflows/build_variant.yml/badge.svg)](https://github.com/sandialabs/seacas)
 [![Github Actions -- CI Intel](https://github.com/sandialabs/seacas/actions/workflows/intel-build.yml/badge.svg)](https://github.com/sandialabs/seacas)
 [![Github Actions -- CI MSYS2](https://github.com/sandialabs/seacas/actions/workflows/msys2.yml/badge.svg)](https://github.com/sandialabs/seacas)
+[![Github Actions -- CI Static](https://github.com/sandialabs/seacas/actions/workflows/build_static.yml/badge.svg)](https://github.com/sandialabs/seacas)
+[![Github Actions -- CI External Lib](https://github.com/sandialabs/seacas/actions/workflows/build_external_lib.yml/badge.svg)](https://github.com/sandialabs/seacas)
+[![Github Actions -- CI Spack](https://github.com/sandialabs/seacas/actions/workflows/spack.yml/badge.svg)](https://github.com/sandialabs/seacas)
+[![Github Actions -- CI AWSSDK](https://github.com/sandialabs/seacas/actions/workflows/build_aws.yml/badge.svg)](https://github.com/sandialabs/seacas)
 
 *  [Get the sources](#get-the-sources)
 *  [Build instructions](#build-instructions)
@@ -44,9 +47,9 @@ cd seacas && export ACCESS=`pwd`
 
 There are a few externally developed third-party libraries (TPL) that
 are required (or optional) to build SEACAS: HDF5, NetCDF, CGNS, MatIO,
-Kokkos, and (if MPI set) PnetCDF libraries. You can build the
-libraries using the `install-tpl.sh` script, or you can install them
-manually as detailed in
+Kokkos, (if MPI set) PnetCDF, AWS SDK for C++ and Cereal
+libraries. You can build the libraries using the `install-tpl.sh`
+script, or you can install them manually as detailed in
 [TPL-Manual-Install.md](TPL-Manual-Install.md).
 
 *  The script requires bash and curl, which you may need to install.
@@ -64,6 +67,7 @@ manually as detailed in
 | USE_PROXY       | YES, NO | NO  | Sandia specific -- use proxy when downloading tar files |
 | DEBUG           | YES, NO | NO  | Build debug executable; default is optimized
 | SHARED          | YES, NO | YES | Build shared libraries if YES, archive (.a) if NO |
+| OSX_TARGET      | version | default | If on MacOS, the minimum version the binaries are to be deployed on |
 | CRAY            | YES, NO | YES | Is this a Cray system (special parallel options) |
 | NEEDS_ZLIB      | YES, NO | NO  | If system does not have zlib installed, download and install it (HDF5 compression). |
 | USE\_ZLIB\_NG   | YES, NO | NO  | Should the improved [zlib-ng](https://github.com/zlib-ng/zlib-ng) library be used to provide ZLIB capability |
@@ -75,6 +79,8 @@ manually as detailed in
 | PARMETIS        | YES, NO | NO  | Should parmetis TPL be built (parallel decomposition). |
 | ADIOS2          | YES, NO | NO  | Should adios2 TPL be built. |
 | CATALYST2       | YES, NO | NO  | Should catalyst 2 TPL be built. |
+| AWSSDK          | YES, NO | NO  | Should AWS SDK for C++ TPL be built. See [README-S3.md](README-S3.md). |
+| CEREAL          | YES, NO | NO  | Should Cereal TPL be built. |
 | KOKKOS          | YES, NO | NO  | Should Kokkos TPL be built. |
 | GNU_PARALLEL    | YES, NO | YES | Should GNU parallel script be built. |
 | FMT             | YES, NO | YES | Should Lib::FMT TPL be built. |

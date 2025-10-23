@@ -11,7 +11,6 @@
 #include "Ioss_VariableType.h"
 #include "exodus/Ioex_Utils.h"
 #include <cstring>
-#include <fmt/core.h>
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 #include <iosfwd>
@@ -116,9 +115,9 @@ namespace Ioex {
     int    rootid = static_cast<unsigned>(exodusFilePtr) & EX_FILE_ID_MASK;
     int    status = nc_get_att_double(rootid, NC_GLOBAL, "last_written_time", &tmp);
 
-    if (status == NC_NOERR && value > tmp) {
+    if (status == EX_NOERR && value > tmp) {
       status = nc_put_att_double(rootid, NC_GLOBAL, "last_written_time", NC_DOUBLE, 1, &value);
-      if (status != NC_NOERR) {
+      if (status != EX_NOERR) {
         ex_opts(EX_VERBOSE);
         auto errmsg = fmt::format(
             "Error: failed to define 'last_written_time' attribute to file id {}", exodusFilePtr);
@@ -345,7 +344,7 @@ namespace Ioex {
     }
   }
 
-  char **get_name_array(size_t count, int size)
+  char **get_name_array(size_t count, size_t size)
   {
     auto *names = new char *[count];
     for (size_t i = 0; i < count; i++) {
@@ -355,9 +354,9 @@ namespace Ioex {
     return names;
   }
 
-  void delete_name_array(char **names, int count)
+  void delete_name_array(char **names, size_t count)
   {
-    for (int i = 0; i < count; i++) {
+    for (size_t i = 0; i < count; i++) {
       delete[] names[i];
     }
     delete[] names;
@@ -409,11 +408,11 @@ namespace Ioex {
     nc_type att_type = NC_NAT;
     size_t  att_len  = 0;
     int     status   = nc_inq_att(rootid, NC_GLOBAL, "last_written_time", &att_type, &att_len);
-    if (status == NC_NOERR && att_type == NC_DOUBLE) {
+    if (status == EX_NOERR && att_type == NC_DOUBLE) {
       // Attribute exists on this database, read it...
       double tmp = 0.0;
       status     = nc_get_att_double(rootid, NC_GLOBAL, "last_written_time", &tmp);
-      if (status == NC_NOERR) {
+      if (status == EX_NOERR) {
         *value = tmp;
         found  = true;
       }
@@ -445,12 +444,12 @@ namespace Ioex {
     nc_type att_type = NC_NAT;
     size_t  att_len  = 0;
     int     status   = nc_inq_att(exodusFilePtr, NC_GLOBAL, "processor_info", &att_type, &att_len);
-    if (status == NC_NOERR && att_type == NC_INT) {
+    if (status == EX_NOERR && att_type == NC_INT) {
       // Attribute exists on this database, read it and check that the information
       // matches the current processor count and processor id.
       int proc_info[2];
       status = nc_get_att_int(exodusFilePtr, NC_GLOBAL, "processor_info", proc_info);
-      if (status == NC_NOERR) {
+      if (status == EX_NOERR) {
         if (proc_info[0] != processor_count && proc_info[0] > 1) {
           fmt::print(Ioss::WarnOut(),
                      "Processor decomposition count in file ({}) does not match current "
@@ -723,10 +722,10 @@ namespace Ioex {
     if (!extra.empty()) {
       fmt::print(errmsg, " {}", extra);
     }
-    fmt::print(errmsg, " Please report to gdsjaar@sandia.gov if you need help.");
+    fmt::print(errmsg, " Please report to sierra-help@sandia.gov if you need help.");
 
     ex_err_fn(exoid, nullptr, nullptr, EX_PRTLASTMSG);
-    IOSS_ERROR(errmsg);
+    IOSS_ABORT(errmsg);
   }
 
   int add_map_fields(int exoid, Ioss::ElementBlock *block, int64_t my_element_count,
@@ -930,7 +929,7 @@ namespace Ioex {
       for (size_t iel = 0; iel < element.size(); iel++) {
         int64_t elem_id = element[iel];
         if (elem_id <= 0) {
-          IOSS_ERROR(fmt::format(
+          IOSS_ABORT(fmt::format(
               "ERROR: In sideset/surface '{}' an element with id {} is specified.  Element "
               "ids must be greater than zero. ({})",
               surface_name, elem_id, __func__));
@@ -951,7 +950,7 @@ namespace Ioex {
         if (common_ftopo == nullptr && sides[iel] != current_side) {
           current_side = sides[iel];
           if (current_side <= 0 || current_side > block->topology()->number_boundaries()) {
-            IOSS_ERROR(fmt::format(
+            IOSS_ABORT(fmt::format(
                 "ERROR: In sideset/surface '{}' for the element with id {} of topology '{}';\n\t"
                 "an invalid face index '{}' is specified.\n\tFace indices "
                 "must be between 1 and {}. ({})",

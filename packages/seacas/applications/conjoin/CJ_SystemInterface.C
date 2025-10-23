@@ -48,13 +48,20 @@ void Excn::SystemInterface::enroll_options()
   options_.enroll("element_status_variable", GetLongOption::MandatoryValue,
                   "Name to use as element existence status variable;\n"
                   "\t\tmust not exist on input files. If NONE, then not created.\n"
+                  "\t\tWill only be output if mesh topology changes between parts.\n"
                   "\t\tDefault = elem_status",
                   "elem_status");
 
   options_.enroll("nodal_status_variable", GetLongOption::MandatoryValue,
                   "Name to use as nodal status variable;\n\t\tmust not exist on input files.\n"
+                  "\t\tWill only be output if mesh topology changes between parts.\n"
                   "\t\tIf NONE, then not created. Default = node_status",
-                  "node_status", nullptr, true);
+                  "node_status");
+
+  options_.enroll("force_status_variable", GetLongOption::NoValue,
+                  "Output the node and element status variables even if they are not needed\n"
+                  "\t\tdue to no changes in mesh topology",
+                  nullptr, nullptr, true);
 
   options_.enroll("netcdf4", GetLongOption::NoValue,
                   "Create output database using the HDF5-based "
@@ -83,8 +90,8 @@ void Excn::SystemInterface::enroll_options()
                   nullptr);
 
   options_.enroll("quantize_nsd", GetLongOption::MandatoryValue,
-                  "Use the lossy quantize compression method.  Value specifies number of digits to "
-                  "retain (1..15) [exodus only]",
+                  "Use the lossy quantize compression method.\n"
+                  "\t\tValue specifies number of digits to retain (1..15) [exodus only]",
                   nullptr, nullptr, true);
 
   options_.enroll("sort_times", GetLongOption::NoValue,
@@ -107,23 +114,36 @@ void Excn::SystemInterface::enroll_options()
   options_.enroll("gvar", GetLongOption::MandatoryValue,
                   "Comma-separated list of global variables to be joined or ALL or NONE.", nullptr);
 
-  options_.enroll("evar", GetLongOption::MandatoryValue,
-                  "Comma-separated list of element variables to be joined or ALL or NONE.\n"
-                  "\t\tVariables can be limited to certain blocks by appending a\n"
-                  "\t\tcolon followed by the block id.  E.g. -evar sigxx:10:20",
-                  nullptr);
+  options_.enroll(
+      "evar", GetLongOption::MandatoryValue,
+      "Comma-separated list of element variables to be joined or ALL or NONE.\n"
+      "\t\tVariables can be limited to certain blocks by appending a\n"
+      "\t\tcolon followed by the block id.  E.g. -evar sigxx:10:20\n"
+      "\t\tIf the first word is `OMIT`, then the list specifies variables to omit, not include.",
+      nullptr);
 
-  options_.enroll("nvar", GetLongOption::MandatoryValue,
-                  "Comma-separated list of nodal variables to be joined or ALL or NONE.", nullptr);
+  options_.enroll(
+      "nvar", GetLongOption::MandatoryValue,
+      "Comma-separated list of nodal variables to be joined or ALL, NONE, OMIT.\n"
+      "\t\tIf the first word is `OMIT`, then the list specifies variables to omit, not include.",
+      nullptr);
 
-  options_.enroll("nsetvar", GetLongOption::MandatoryValue,
-                  "Comma-separated list of nodeset variables to be joined or ALL or NONE.",
-                  nullptr);
+  options_.enroll(
+      "nsetvar", GetLongOption::MandatoryValue,
+      "Comma-separated list of nodeset variables to be joined or ALL, NONE, OMIT.\n"
+      "\t\tIf the first word is `OMIT`, then the list specifies variables to omit, not include.",
+      nullptr);
 
-  options_.enroll("ssetvar", GetLongOption::MandatoryValue,
-                  "Comma-separated list of sideset variables to be joined or ALL or NONE.", nullptr,
-                  nullptr, true);
+  options_.enroll(
+      "ssetvar", GetLongOption::MandatoryValue,
+      "Comma-separated list of sideset variables to be joined or ALL, NONE, OMIT.\n"
+      "\t\tIf the first word is `OMIT`, then the list specifies variables to omit, not include.",
+      nullptr);
 
+  options_.enroll("use_all_times", GetLongOption::NoValue,
+                  "All times on all databases will be used.\n"
+                  "\t\tThe output database may have non-monotonically increasing times.",
+                  nullptr, nullptr, true);
   options_.enroll(
       "interpart_minimum_time_delta", GetLongOption::MandatoryValue,
       "If the time delta between the maximum time on one\n\t\tdatabase and the minimum time on "
@@ -170,7 +190,7 @@ bool Excn::SystemInterface::parse_options(int argc, char **argv)
     fmt::print("\n\tCan also set options via CONJOIN_OPTIONS environment variable.\n"
                "\n\tDocumentation: "
                "https://sandialabs.github.io/seacas-docs/sphinx/html/index.html#conjoin\n"
-               "\n\t->->-> Send email to gdsjaar@sandia.gov for conjoin support.<-<-<-\n");
+               "\n\t->->-> Send email to sierra-help@sandia.gov for conjoin support.<-<-<-\n");
     exit(EXIT_SUCCESS);
   }
 
@@ -244,12 +264,14 @@ bool Excn::SystemInterface::parse_options(int argc, char **argv)
     }
   }
 
-  useNetcdf4_        = options_.retrieve("netcdf4") != nullptr;
-  sortTimes_         = options_.retrieve("sort_times") != nullptr;
-  ints64Bit_         = options_.retrieve("64-bit") != nullptr;
-  ignoreCoordinates_ = options_.retrieve("ignore_coordinate_check") != nullptr;
-  omitNodesets_      = options_.retrieve("omit_nodesets") != nullptr;
-  omitSidesets_      = options_.retrieve("omit_sidesets") != nullptr;
+  useNetcdf4_          = options_.retrieve("netcdf4") != nullptr;
+  sortTimes_           = options_.retrieve("sort_times") != nullptr;
+  ints64Bit_           = options_.retrieve("64-bit") != nullptr;
+  ignoreCoordinates_   = options_.retrieve("ignore_coordinate_check") != nullptr;
+  omitNodesets_        = options_.retrieve("omit_nodesets") != nullptr;
+  omitSidesets_        = options_.retrieve("omit_sidesets") != nullptr;
+  useAllTimes_         = options_.retrieve("use_all_times") != nullptr;
+  forceStatusVariable_ = options_.retrieve("force_status_variable") != nullptr;
 
   zlib_ = (options_.retrieve("zlib") != nullptr);
   szip_ = (options_.retrieve("szip") != nullptr);
@@ -365,10 +387,12 @@ namespace {
       // "sigxx" should be written only for blocks with id 1, 10, and
       // 100.  "sigxx" would indicate that the variable should be
       // written for all blocks.
-      auto I = var_list.begin();
-      while (I != var_list.end()) {
-        StringVector name_id  = SLIB::tokenize(*I, ":");
+      for (const auto &var : var_list) {
+        StringVector name_id  = SLIB::tokenize(var, ":");
         std::string  var_name = LowerCase(name_id[0]);
+        if (var_name == "omit") {
+          var_name = "!omit"; // So sorts at front of list...
+        }
         if (name_id.size() == 1) {
           (*variable_list).emplace_back(var_name, 0);
         }
@@ -379,7 +403,6 @@ namespace {
             (*variable_list).emplace_back(var_name, id);
           }
         }
-        ++I;
       }
       // Sort the list...
       std::sort(variable_list->begin(), variable_list->end(), string_id_sort);

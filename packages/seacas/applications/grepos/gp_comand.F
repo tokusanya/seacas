@@ -270,7 +270,7 @@ C     --Read command line
       INTYP(MIN(MAXFLD,NUMFLD)+1) = -999
       if (numfld .gt. maxfld) then
          write (string, 1) numfld, maxfld
- 1       format('There were ',i3, ' words entered on the command line,'
+ 1       format('There were ',i3, ' words entered on the command line,',
      $          ' but only ',i3,' are allowed.')
          CALL PRTERR ('WARNING', STRING(:LENSTR(STRING)))
          CALL PRTERR ('CMDSPEC',
@@ -970,13 +970,15 @@ C=======================================================================
           IF (NUMESS .EQ. 0) THEN
             CALL PRTERR ('CMDSPEC', 'No side sets to list')
           ELSE
-            CALL SHOWFL ('S',NUMESS,IDESS,IA(KNESS),IA(KNDSS),SSNAME)
+            CALL SHOWFL ('S',NUMESS,IDESS,IA(KNESS),IA(KNDSS),SSNAME,
+     $            IESSST)
           END IF
         ELSE IF (LISTYP .EQ. 'NSETS' .OR. LISTYP .EQ. 'NODESETS') THEN
           IF (NUMNPS .EQ. 0) THEN
             CALL PRTERR ('CMDSPEC', 'No node sets to list')
           ELSE
-            CALL SHOWFL ('N', NUMNPS, IDNPS, IA(KNNNS), IA(1), NSNAME)
+            CALL SHOWFL ('N', NUMNPS, IDNPS, IA(KNNNS), IA(1), NSNAME,
+     $            INPSST)
           END IF
         ELSE IF (LISTYP .EQ.'VARS' .OR. LISTYP .EQ.'VARIABLE') THEN
           CALL DBPINI ('TISV', NDBIN, TITLE, NDIM, NUMNP, NUMEL,
@@ -984,7 +986,7 @@ C=======================================================================
      *      NVARGL, NVARNP, NVAREL, NVARNS, NVARSS, ' ')
         ELSE IF (LISTYP .EQ.'BLOCKS' .OR. LISTYP .EQ.'MATERIAL') THEN
           CALL DBPELB ('N', NELBLK, IDELB, NUMELB, NUMLNK, NUMATR,
-     &      BLKTYP, EBNAME, ATNAME, IDUM, IDUM, IDUM, IDUM)
+     &      BLKTYP, EBNAME, ATNAME, IDUM, IDUM, IDUM, IDUM, IELBST)
         ELSE IF (LISTYP .EQ. 'COMMANDS') THEN
           CALL SHOCMD ('COMMANDS', CMDTBL)
         ELSE IF (LISTYP .EQ. 'QA' .OR. LISTYP .EQ. 'INFORMAT') THEN

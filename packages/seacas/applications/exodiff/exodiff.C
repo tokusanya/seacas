@@ -1,4 +1,4 @@
-// Copyright(C) 1999-, 20242024, , , , , , ,  National Technology & Engineering Solutions
+// Copyright(C) 1999-2025 National Technology & Engineering Solutions
 // of Sandia, LLC (NTESS).  Under the terms of Contract DE-NA0003525 with
 // NTESS, the U.S. Government retains certain rights in this software.
 //
@@ -59,16 +59,9 @@ struct TimeInterp
 
 std::string Date()
 {
-  time_t calendar_time = time(nullptr);
-#if defined __NVCC__
-  char       tbuf[32];
-  struct tm *local_time = localtime(&calendar_time);
-  strftime(tbuf, 32, "%Y/%m/%d   %H:%M:%S %Z", local_time);
-  std::string time_string(tbuf);
-#else
-  auto const local_time  = fmt::localtime(calendar_time);
-  auto       time_string = fmt::format("{:%Y/%m/%d   %H:%M:%S %Z}", local_time);
-#endif
+  auto now         = std::chrono::system_clock::now();
+  auto time_string = fmt::format("{:%Y/%m/%d   %H:%M:%S %Z}",
+                                 std::chrono::time_point_cast<std::chrono::seconds>(now));
   return time_string;
 }
 

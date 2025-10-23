@@ -339,7 +339,7 @@ namespace Ioss {
     bool begin(Ioss::State state)
     {
       IOSS_FUNC_ENTER(m_);
-      progress(__func__);
+      progress("Ioss::DatabaseIO::begin(Ioss::State state)");
       return begin_nl(state);
     }
 
@@ -356,7 +356,7 @@ namespace Ioss {
     bool end(Ioss::State state)
     {
       IOSS_FUNC_ENTER(m_);
-      progress(__func__);
+      progress("Ioss::DatabaseIO::end(Ioss::State state)");
       return end_nl(state);
     }
 
@@ -846,7 +846,7 @@ namespace Ioss {
     virtual int  num_internal_change_set_nl() { return 0; }
     virtual Ioss::NameList internal_change_set_describe_nl(bool /* return_full_names */)
     {
-      return Ioss::NameList();
+      return {};
     }
 
     virtual bool begin_nl(Ioss::State state) = 0;
@@ -854,7 +854,7 @@ namespace Ioss {
 
     virtual void                read_meta_data_nl() = 0;
     virtual void                get_step_times_nl() {}
-    virtual std::vector<double> get_db_step_times_nl() { return std::vector<double>(); }
+    virtual std::vector<double> get_db_step_times_nl() { return {}; }
 
     virtual bool begin_state_nl(int state, double time);
     virtual bool end_state_nl(int state, double time);
