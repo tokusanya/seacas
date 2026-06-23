@@ -278,3 +278,4 @@ namespace suplib_cpp {
 #define ON_BLOCK_EXIT suplib_cpp::ScopeGuard ANONYMOUS_VARIABLE(scopeGuard) = suplib_cpp::MakeGuard
 #define ON_BLOCK_EXIT_OBJ                                                                          \
   suplib_cpp::ScopeGuard ANONYMOUS_VARIABLE(scopeGuard) = suplib_cpp::MakeObjGuard
+  

@@ -30,6 +30,8 @@
 #include "Ioss_IOFactory.h" // for IOFactory
 
 #include "IossMesh.h"
+#include "Ioss_CopyDatabase.h"
+#include "Ioss_MeshCopyOptions.h"
 
 namespace utest_util {
 
@@ -103,6 +105,37 @@ namespace utest_util {
     Ioss_MPI_Comm get_comm() const { return m_communicator; }
 
   protected:
+
+
+    void write_region_to_file(Ioss::Region          *inputRegion,
+                             Ioss::PropertyManager &properties,
+                                         Ioss::MeshCopyOptions &options,
+                                         const std::string     &outputFile)
+  {
+    // Write the mesh
+    Ioss::DatabaseIO *dbo = Ioss::IOFactory::create("exodusII", outputFile, Ioss::WRITE_RESTART,
+                                                    get_comm(), properties);
+    ASSERT_FALSE(dbo == nullptr || !dbo->ok(true));
+
+    // NOTE: 'outputRegion' owns 'dbo' pointer at this time
+    Ioss::Region outputRegion(dbo, "region_2");
+
+    Ioss::copy_database(*inputRegion, outputRegion, options);
+  }
+
+    Ioss::MeshCopyOptions get_default_mesh_copy_options()
+  {
+    Ioss::MeshCopyOptions options{};
+    options.verbose           = true;
+    options.output_summary    = true;
+    options.debug             = false;
+    options.ints_64_bit       = false;
+    options.data_storage_type = 1;
+    options.add_proc_id       = true;
+
+    return options;
+  }
+
     Ioss_MPI_Comm             m_communicator;
     unsigned                  m_spatialDim;
     std::shared_ptr<IossMesh> m_iossMesh;
