@@ -104,6 +104,22 @@ namespace utest_util {
 
     Ioss_MPI_Comm get_comm() const { return m_communicator; }
 
+    template <size_t size> void clear_args(int &argc, const char *(&argv)[size])
+    {
+      argc = 0;
+
+      for (unsigned i = 0; i < size; i++) {
+        argv[i] = nullptr;
+      }
+    }
+
+    template <size_t size> void add_arg(int &argc, const char *(&argv)[size], const char *arg)
+    {
+      ThrowRequireWithMsg(argc < size, "Argument limit of " << size << " has been reached");
+
+      argv[argc++] = arg;
+    }
+
   protected:
 
 

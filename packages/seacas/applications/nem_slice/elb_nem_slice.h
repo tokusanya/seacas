@@ -4,16 +4,16 @@
 #include <iostream>
 #include <stdexcept>
 
-#include "add_to_log.h"         // for add_to_log
-#include "elb.h"                // for LB_Description<INT>, get_time, etc
-#include "elb_allo.h"           // for array_alloc
-#include "elb_elem.h"           // for ElementType, ::NULL_EL
-#include "elb_err.h"            // for error_report, Gen_Error, etc
-#include "elb_exo.h"            // for init_weight_struct, etc
-#include "elb_graph.h"          // for generate_graph
-#include "elb_inp.h"            // for check_inp_specs, etc
-#include "elb_loadbal.h"        // for generate_loadbal, etc
-#include "elb_output.h"         // for write_nemesis, write_vis
+#include "add_to_log.h"  // for add_to_log
+#include "elb.h"         // for LB_Description<INT>, get_time, etc
+#include "elb_allo.h"    // for array_alloc
+#include "elb_elem.h"    // for ElementType, ::NULL_EL
+#include "elb_err.h"     // for error_report, Gen_Error, etc
+#include "elb_exo.h"     // for init_weight_struct, etc
+#include "elb_graph.h"   // for generate_graph
+#include "elb_inp.h"     // for check_inp_specs, etc
+#include "elb_loadbal.h" // for generate_loadbal, etc
+#include "elb_output.h"  // for write_nemesis, write_vis
 #include "fmt/ostream.h"
 
 #ifdef USE_ZOLTAN
@@ -22,67 +22,83 @@
 
 #pragma once
 
-template <typename INT>
-class NemSlice {
-    public:
+template <typename INT> class NemSlice
+{
+public:
+  NemSlice(int argc, char *argv[]) : time1(0), time2(0), argc(argc), argv(argv) {}
 
-      NemSlice(int argc, char** argv) 
-        : time1(0), time2(0), argc(argc), argv(argv) {}
+  int run()
+  {
+    init_mpi();
+    int result = setup();
+    if (result != 0)
+      return result;
 
-      int run() 
-      {
-        int result = setup();
-        if (result != 0) return result;
+    result = find_graph();
+    if (result != 0)
+      return result;
 
-        result = find_graph();
-        if (result != 0) return result;
+    result = find_load_balance();
+    if (result != 0)
+      return result;
 
-        result = find_load_balance();
-        if (result != 0) return result;
+    result = write_partition();
+    if (result != 0)
+      return result;
+    finalize_mpi();
 
-        result = write_partition();
-        if (result != 0) return result;
+    return 0;
+  }
 
-        return 0;
-      }
+  void init_mpi();
+  void finalize_mpi();
+  int  setup();
+  int  find_graph();
+  int  find_load_balance();
+  int  write_partition();
 
-      int setup();
-      int find_graph();
-      int find_load_balance();
-      int write_partition();
-     
-      Machine_Description    machine;
-      LB_Description<INT>    lb;
-      Problem_Description    problem;
-      Solver_Description     solver;
-      Weight_Description     weight;
-      Mesh_Description<INT>  mesh;
-      Sphere_Info            sphere;
-      Graph_Description<INT> graph;
+  Machine_Description    machine;
+  LB_Description<INT>    lb;
+  Problem_Description    problem;
+  Solver_Description     solver;
+  Weight_Description     weight;
+  Mesh_Description<INT>  mesh;
+  Sphere_Info            sphere;
+  Graph_Description<INT> graph;
 
-    private:
-      std::string exoII_inp_file;
-      std::string ascii_inp_file;
-      std::string nemI_out_file;
+private:
+  std::string exoII_inp_file;
+  std::string ascii_inp_file;
+  std::string nemI_out_file;
 
-      double time1;
-      double time2;
+  double time1;
+  double time2;
 
-      int argc;
-      char** argv;
+  int    argc;
+  char **argv;
 
-      void print_input(Machine_Description * /*machine*/, LB_Description<INT> * /*lb*/,
-                       Problem_Description * /*prob*/, Solver_Description * /*solver*/,
-                       Weight_Description * /*weight*/);
+  void print_input(Machine_Description * /*machine*/, LB_Description<INT> * /*lb*/,
+                   Problem_Description * /*prob*/, Solver_Description * /*solver*/,
+                   Weight_Description * /*weight*/);
 };
 
-template <typename INT>
-int NemSlice<INT>::setup()
+template <typename INT> void NemSlice<INT>::init_mpi()
 {
-/*-----------------------------Execution Begins------------------------------*/
 #ifdef USE_ZOLTAN
   MPI_Init(&argc, &argv);
 #endif
+}
+
+template <typename INT> void NemSlice<INT>::finalize_mpi()
+{
+#ifdef USE_ZOLTAN
+  MPI_Finalize();
+#endif
+}
+
+template <typename INT> int NemSlice<INT>::setup()
+{
+  /*-----------------------------Execution Begins------------------------------*/
 
   mesh.title[0] = '\0';
 
@@ -255,8 +271,7 @@ int NemSlice<INT>::setup()
   return 0;
 }
 
-template <typename INT>
-int NemSlice<INT>::find_graph()
+template <typename INT> int NemSlice<INT>::find_graph()
 {
   /* Generate the graph for the mesh */
   time1 = get_time();
@@ -271,8 +286,7 @@ int NemSlice<INT>::find_graph()
   return 0;
 }
 
-template <typename INT>
-int NemSlice<INT>::find_load_balance()
+template <typename INT> int NemSlice<INT>::find_load_balance()
 {
   /* Generate load balance */
   try {
@@ -322,8 +336,7 @@ int NemSlice<INT>::find_load_balance()
   return 0;
 }
 
-template <typename INT>
-int NemSlice<INT>::write_partition()
+template <typename INT> int NemSlice<INT>::write_partition()
 {
   /* Generate the load balance maps */
   time1 = get_time();
@@ -417,186 +430,183 @@ int NemSlice<INT>::write_partition()
 
   vec_free(lb.bor_nodes);
 
-#ifdef USE_ZOLTAN
-  MPI_Finalize();
-#endif
-
   return 0;
 }
 
 template <typename INT>
-void NemSlice<INT>::print_input(Machine_Description *machine, LB_Description<INT> *lb, Problem_Description *prob,
-                                Solver_Description *solver, Weight_Description *weight)
-  {
-    fmt::print("{} version {}\n", UTIL_NAME, ELB_VERSION);
+void NemSlice<INT>::print_input(Machine_Description *machine, LB_Description<INT> *lb,
+                                Problem_Description *prob, Solver_Description *solver,
+                                Weight_Description *weight)
+{
+  fmt::print("{} version {}\n", UTIL_NAME, ELB_VERSION);
 
-    fmt::print("Performing ");
-    switch (prob->type) {
-    case DecompType::NODAL: fmt::print("a nodal "); break;
+  fmt::print("Performing ");
+  switch (prob->type) {
+  case DecompType::NODAL: fmt::print("a nodal "); break;
 
-    case DecompType::ELEMENTAL: fmt::print("an elemental "); break;
+  case DecompType::ELEMENTAL: fmt::print("an elemental "); break;
+  }
+
+  fmt::print("load balance with the following parameters...\n");
+
+  /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+  /*                         Machine_Description PARAMETERS                                */
+  /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+  fmt::print("Machine Description\n");
+  if (machine->num_boxes > 1) {
+    fmt::print("\tCluster of {} boxes\n", machine->num_boxes);
+    fmt::print("\tarchitecture of each box: ");
+  }
+  else {
+    fmt::print("\tarchitecture: ");
+  }
+  switch (machine->type) {
+  case MachineType::HCUBE: fmt::print("hypercube\n"); break;
+  case MachineType::MESH: fmt::print("mesh\n"); break;
+  default: fmt::print("invalid/unknown\n"); break;
+  }
+
+  if (machine->num_boxes > 1) {
+    fmt::print("\tdimension(s) of each box: ");
+  }
+  else {
+    fmt::print("\tdimension(s): ");
+  }
+
+  switch (machine->type) {
+  case MachineType::HCUBE: fmt::print("{}\n", machine->dim[0]); break;
+
+  case MachineType::MESH:
+    for (int cnt = 0; cnt < (machine->num_dims) - 1; cnt++) {
+      fmt::print("{}x", machine->dim[cnt]);
     }
 
-    fmt::print("load balance with the following parameters...\n");
+    fmt::print("{}\n", machine->dim[(machine->num_dims) - 1]);
+    break;
+  default:; /* do nothing */
+  }
+  fmt::print("\ttotal number of processors: {}\n", machine->num_procs);
 
-    /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
-    /*                         Machine_Description PARAMETERS                                */
-    /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
-    fmt::print("Machine Description\n");
-    if (machine->num_boxes > 1) {
-      fmt::print("\tCluster of {} boxes\n", machine->num_boxes);
-      fmt::print("\tarchitecture of each box: ");
-    }
-    else {
-      fmt::print("\tarchitecture: ");
-    }
-    switch (machine->type) {
-    case MachineType::HCUBE: fmt::print("hypercube\n"); break;
-    case MachineType::MESH: fmt::print("mesh\n"); break;
-    default: fmt::print("invalid/unknown\n"); break;
-    }
+  /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+  /*                       LOAD BALANCE PARAMETERS                             */
+  /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+  fmt::print("Load Balance Parameters\n");
+  switch (lb->type) {
+  case Balance::MULTIKL:
+    fmt::print("\ttype: multilevel\n");
+    fmt::print("\tnumber of sections: {}\n", lb->num_sects);
+    break;
 
-    if (machine->num_boxes > 1) {
-      fmt::print("\tdimension(s) of each box: ");
-    }
-    else {
-      fmt::print("\tdimension(s): ");
-    }
+  case Balance::SPECTRAL:
+    fmt::print("\ttype: spectral\n");
+    fmt::print("\tnumber of sections: {}\n", lb->num_sects);
+    break;
 
-    switch (machine->type) {
-    case MachineType::HCUBE: fmt::print("{}\n", machine->dim[0]); break;
+  case Balance::INERTIAL: fmt::print("\ttype: inertial\n"); break;
 
-    case MachineType::MESH:
-      for (int cnt = 0; cnt < (machine->num_dims) - 1; cnt++) {
-        fmt::print("{}x", machine->dim[cnt]);
-      }
+  case Balance::ZPINCH: fmt::print("\ttype: zpinch\n"); break;
 
-      fmt::print("{}\n", machine->dim[(machine->num_dims) - 1]);
-      break;
-    default:; /* do nothing */
-    }
-    fmt::print("\ttotal number of processors: {}\n", machine->num_procs);
+  case Balance::BRICK: fmt::print("\ttype: brick\n"); break;
 
-    /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
-    /*                       LOAD BALANCE PARAMETERS                             */
-    /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
-    fmt::print("Load Balance Parameters\n");
-    switch (lb->type) {
-    case Balance::MULTIKL:
-      fmt::print("\ttype: multilevel\n");
-      fmt::print("\tnumber of sections: {}\n", lb->num_sects);
-      break;
+  case Balance::ZOLTAN_RCB: fmt::print("\ttype: rcb\n"); break;
 
-    case Balance::SPECTRAL:
-      fmt::print("\ttype: spectral\n");
-      fmt::print("\tnumber of sections: {}\n", lb->num_sects);
-      break;
+  case Balance::ZOLTAN_RIB: fmt::print("\ttype: rib\n"); break;
 
-    case Balance::INERTIAL: fmt::print("\ttype: inertial\n"); break;
+  case Balance::ZOLTAN_HSFC: fmt::print("\ttype: hsfc\n"); break;
 
-    case Balance::ZPINCH: fmt::print("\ttype: zpinch\n"); break;
+  case Balance::LINEAR: fmt::print("\ttype: linear\n"); break;
 
-    case Balance::BRICK: fmt::print("\ttype: brick\n"); break;
+  case Balance::RANDOM: fmt::print("\ttype: random\n"); break;
 
-    case Balance::ZOLTAN_RCB: fmt::print("\ttype: rcb\n"); break;
+  case Balance::SCATTERED: fmt::print("\ttype: scattered\n"); break;
 
-    case Balance::ZOLTAN_RIB: fmt::print("\ttype: rib\n"); break;
+  case Balance::INFILE:
+    fmt::print("\ttype: input from file\n");
+    fmt::print("\tfile name: {}\n", lb->file);
+    break;
+  default:; /* do nothing */
+  }
+  fmt::print("\trefinement: ");
+  switch (lb->refine) {
+  case Balance::KL_REFINE: fmt::print("Kernighan-Lin\n"); break;
 
-    case Balance::ZOLTAN_HSFC: fmt::print("\ttype: hsfc\n"); break;
+  case Balance::NO_REFINE: fmt::print("none\n"); break;
+  default:; /* do nothing */
+  }
+  if (lb->cnctd_dom) {
+    fmt::print("\tConnected Domain enforced\n");
+  }
+  if (lb->outfile) {
+    fmt::print("\toutput assignment vector\n");
+    fmt::print("\tfile name: {}\n", lb->file);
+  }
 
-    case Balance::LINEAR: fmt::print("\ttype: linear\n"); break;
-
-    case Balance::RANDOM: fmt::print("\ttype: random\n"); break;
-
-    case Balance::SCATTERED: fmt::print("\ttype: scattered\n"); break;
-
-    case Balance::INFILE:
-      fmt::print("\ttype: input from file\n");
-      fmt::print("\tfile name: {}\n", lb->file);
-      break;
-    default:; /* do nothing */
-    }
-    fmt::print("\trefinement: ");
-    switch (lb->refine) {
-    case Balance::KL_REFINE: fmt::print("Kernighan-Lin\n"); break;
-
-    case Balance::NO_REFINE: fmt::print("none\n"); break;
-    default:; /* do nothing */
-    }
-    if (lb->cnctd_dom) {
-      fmt::print("\tConnected Domain enforced\n");
-    }
-    if (lb->outfile) {
-      fmt::print("\toutput assignment vector\n");
-      fmt::print("\tfile name: {}\n", lb->file);
-    }
-
-    /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
-    /*                         EIGENSOLVER PARAMETERS                            */
-    /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
-    if (lb->type == Balance::MULTIKL || lb->type == Balance::SPECTRAL) {
-      fmt::print("Eigensolver Parameters\n");
-      fmt::print("\teignsolver tolerance: {}\n", solver->tolerance);
-      if (solver->rqi_flag == SolverOptions::USE_RQI) {
-        fmt::print("\tusing RQI/Symmlq eigensolver\n");
-        fmt::print("\tnumber of vertices to coarsen down to: {}\n", solver->vmax);
-      }
-    }
-
-    /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
-    /*                          WEIGHTING PARAMETERS                             */
-    /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
-    fmt::print("Weighting Parameters\n");
-    if (weight->type == NO_WEIGHT) {
-      fmt::print("\tno weighting\n");
-    }
-    else if (weight->type & READ_EXO) {
-      fmt::print("\tweights from: ExodusII file\n");
-      fmt::print("\ttime index: {}\n", weight->exo_tindx);
-      fmt::print("\tvariable index: {}\n", weight->exo_vindx);
-      fmt::print("\tvariable name: {}\n", weight->exo_varname);
-    }
-    else if (weight->type & EL_BLK) {
-      fmt::print("\tElement Block weights specified\n");
-      for (size_t cnt = 0; cnt < weight->elemblk.size(); cnt++) {
-        fmt::print("\telement block: {}, weight: {}\n", weight->elemblk[cnt],
-                   weight->elemblk_wgt[cnt]);
-      }
-    }
-    else if (weight->type & EDGE_WGT) {
-      fmt::print("\tedge weights turned on\n");
-    }
-
-    /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
-    /*                          WEIGHTING PARAMETERS                             */
-    /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
-    fmt::print("Miscellaneous Options\n");
-    if (prob->face_adj == 1) {
-      fmt::print("\tusing face definition of adjacency\n");
-    }
-    if (prob->global_mech == 1) {
-      fmt::print("\tlooking for global mechanisms\n");
-    }
-    if (prob->local_mech == 1) {
-      fmt::print("\tlooking for local mechanisms\n");
-    }
-    if (prob->find_cnt_domains == 1) {
-      fmt::print("\tidentifying the number of disconnected element blocks on a subdomain\n");
-    }
-    if (prob->mech_add_procs == 1) {
-      fmt::print("\tincreasing the number of processors if mechanisms are found\n");
-    }
-    if (prob->dsd_add_procs == 1) {
-      fmt::print("\tincreasing the number of processors if disconnected sudomains are found\n");
-    }
-    if (prob->no_sph == 1) {
-      fmt::print("\tSPHERES are being treated as concentrated mass - connectivity exists\n");
-    }
-    if (prob->skip_checks == 1) {
-      fmt::print("\tWARNING: side id error checks turned off\n");
-    }
-    if (prob->groups != nullptr) {
-      fmt::print("\telement block groups defined\n");
-      fmt::print("\tgroup string: \"{}\"\n", prob->groups);
+  /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+  /*                         EIGENSOLVER PARAMETERS                            */
+  /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+  if (lb->type == Balance::MULTIKL || lb->type == Balance::SPECTRAL) {
+    fmt::print("Eigensolver Parameters\n");
+    fmt::print("\teignsolver tolerance: {}\n", solver->tolerance);
+    if (solver->rqi_flag == SolverOptions::USE_RQI) {
+      fmt::print("\tusing RQI/Symmlq eigensolver\n");
+      fmt::print("\tnumber of vertices to coarsen down to: {}\n", solver->vmax);
     }
   }
+
+  /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+  /*                          WEIGHTING PARAMETERS                             */
+  /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+  fmt::print("Weighting Parameters\n");
+  if (weight->type == NO_WEIGHT) {
+    fmt::print("\tno weighting\n");
+  }
+  else if (weight->type & READ_EXO) {
+    fmt::print("\tweights from: ExodusII file\n");
+    fmt::print("\ttime index: {}\n", weight->exo_tindx);
+    fmt::print("\tvariable index: {}\n", weight->exo_vindx);
+    fmt::print("\tvariable name: {}\n", weight->exo_varname);
+  }
+  else if (weight->type & EL_BLK) {
+    fmt::print("\tElement Block weights specified\n");
+    for (size_t cnt = 0; cnt < weight->elemblk.size(); cnt++) {
+      fmt::print("\telement block: {}, weight: {}\n", weight->elemblk[cnt],
+                 weight->elemblk_wgt[cnt]);
+    }
+  }
+  else if (weight->type & EDGE_WGT) {
+    fmt::print("\tedge weights turned on\n");
+  }
+
+  /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+  /*                          WEIGHTING PARAMETERS                             */
+  /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+  fmt::print("Miscellaneous Options\n");
+  if (prob->face_adj == 1) {
+    fmt::print("\tusing face definition of adjacency\n");
+  }
+  if (prob->global_mech == 1) {
+    fmt::print("\tlooking for global mechanisms\n");
+  }
+  if (prob->local_mech == 1) {
+    fmt::print("\tlooking for local mechanisms\n");
+  }
+  if (prob->find_cnt_domains == 1) {
+    fmt::print("\tidentifying the number of disconnected element blocks on a subdomain\n");
+  }
+  if (prob->mech_add_procs == 1) {
+    fmt::print("\tincreasing the number of processors if mechanisms are found\n");
+  }
+  if (prob->dsd_add_procs == 1) {
+    fmt::print("\tincreasing the number of processors if disconnected sudomains are found\n");
+  }
+  if (prob->no_sph == 1) {
+    fmt::print("\tSPHERES are being treated as concentrated mass - connectivity exists\n");
+  }
+  if (prob->skip_checks == 1) {
+    fmt::print("\tWARNING: side id error checks turned off\n");
+  }
+  if (prob->groups != nullptr) {
+    fmt::print("\telement block groups defined\n");
+    fmt::print("\tgroup string: \"{}\"\n", prob->groups);
+  }
+}

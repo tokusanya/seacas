@@ -36,6 +36,10 @@
 #include <cstring>    // for strcmp, strstr, strchr, etc
 #include <exodusII.h> // for ex_close, EX_READ, etc
 
+
+#include <iostream>
+
+
 using suplib_cpp::copy_string;
 using suplib_cpp::Data;
 
@@ -503,10 +507,13 @@ int cmd_line_arg_parse(int argc, char *argv[],              /* Args as passed by
     case 'l':
       /* Load balance information */
       sub_opt = optarg;
+      std::cout << "sub_opt = " << sub_opt << "\n";
       if (sub_opt != nullptr) {
         string_to_lower(sub_opt, '\0');
       }
       while (sub_opt != nullptr && *sub_opt != '\0') {
+        //auto v = (Balance)my_getsubopt(&sub_opt, (char *const *)lb_subopts, &value);
+        //std::cout << "v = " << static_cast<int>(v) << "\n";
         switch ((Balance)my_getsubopt(&sub_opt, (char *const *)lb_subopts, &value)) {
         case Balance::MULTIKL: lb->type = Balance::MULTIKL; break;
 
@@ -1377,6 +1384,8 @@ int check_inp_specs(std::string &exoII_inp_file, std::string &nemI_out_file,
     Gen_Error(0, "FATAL: no input ExodusII file specified");
     return 0;
   }
+
+  std::cout << "Check input specs lb->type = " << static_cast<int>(lb->type) << "\n";
 
   /* Check for the existence and readability of the input file */
   int   icpu_ws = 0;
