@@ -12,7 +12,6 @@ TRIBITS_ADD_EXECUTABLE(
  SOURCES ${SOURCES}
 )
 
-
 TRIBITS_ADD_TEST(
         Utst_ejoin
         NAME Utst_ejoin

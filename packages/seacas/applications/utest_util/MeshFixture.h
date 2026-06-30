@@ -28,10 +28,11 @@
 #include "Ioss_CodeTypes.h" // for Ioss_MPI_Comm
 #include "Ioss_DBUsage.h"   // for DatabaseUsage
 #include "Ioss_IOFactory.h" // for IOFactory
+#include "Ioss_MeshCopyOptions.h"
+#include "Ioss_PropertyManager.h"
+#include "Ioss_Region.h" // for IOFactory
 
 #include "IossMesh.h"
-#include "Ioss_CopyDatabase.h"
-#include "Ioss_MeshCopyOptions.h"
 
 namespace utest_util {
 
@@ -104,6 +105,23 @@ namespace utest_util {
 
     Ioss_MPI_Comm get_comm() const { return m_communicator; }
 
+    void fill_linear_proc_distribution(unsigned numEntities, unsigned numProc,
+                                       std::vector<unsigned> &procs);
+
+    std::string get_stacked_hex_element_textmesh_desc(unsigned numElements, unsigned numProcs,
+                                                      bool singleBlock);
+
+    std::string get_stacked_hex_element_textmesh_desc_with_coordinates(unsigned numElements,
+                                                                       unsigned numProcs,
+                                                                       bool     singleBlock);
+
+    std::string get_stacked_beam_element_textmesh_desc(unsigned numElements, unsigned numProcs,
+                                                       bool singleBlock);
+
+    std::string get_stacked_beam_element_textmesh_desc_with_coordinates(unsigned numElements,
+                                                                        unsigned numProcs,
+                                                                        bool     singleBlock);
+
     template <size_t size> void clear_args(int &argc, const char *(&argv)[size])
     {
       argc = 0;
@@ -121,37 +139,22 @@ namespace utest_util {
     }
 
   protected:
+    void add_material_property_to_element_block(Ioss::Region *region, const std::string &blockName,
+                                                const std::string &propertyName,
+                                                const std::string &propertyValue);
 
+    void test_property_from_file(const std::string &inputFile, const std::string &propertyName,
+                                 const std::string &propertyValue);
+    void test_property_from_file(Ioss_MPI_Comm comm, const std::string &inputFile,
+                                 const std::string &propertyName, const std::string &propertyValue);
 
-    void write_region_to_file(Ioss::Region          *inputRegion,
-                             Ioss::PropertyManager &properties,
-                                         Ioss::MeshCopyOptions &options,
-                                         const std::string     &outputFile)
-  {
-    // Write the mesh
-    Ioss::DatabaseIO *dbo = Ioss::IOFactory::create("exodusII", outputFile, Ioss::WRITE_RESTART,
-                                                    get_comm(), properties);
-    ASSERT_FALSE(dbo == nullptr || !dbo->ok(true));
+    void write_region_to_file(Ioss::Region *inputRegion, Ioss::PropertyManager &properties,
+                              Ioss::MeshCopyOptions &options, const std::string &outputFile);
+    void write_region_to_file(Ioss::Region *inputRegion, Ioss::PropertyManager &properties,
+                              const std::string &outputFile);
+    void write_region_to_file(Ioss::Region *inputRegion, const std::string &outputFile);
 
-    // NOTE: 'outputRegion' owns 'dbo' pointer at this time
-    Ioss::Region outputRegion(dbo, "region_2");
-
-    Ioss::copy_database(*inputRegion, outputRegion, options);
-  }
-
-    Ioss::MeshCopyOptions get_default_mesh_copy_options()
-  {
-    Ioss::MeshCopyOptions options{};
-    options.verbose           = true;
-    options.output_summary    = true;
-    options.debug             = false;
-    options.ints_64_bit       = false;
-    options.data_storage_type = 1;
-    options.add_proc_id       = true;
-
-    return options;
-  }
-
+  protected:
     Ioss_MPI_Comm             m_communicator;
     unsigned                  m_spatialDim;
     std::shared_ptr<IossMesh> m_iossMesh;
