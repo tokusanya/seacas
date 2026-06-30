@@ -54,8 +54,7 @@ namespace {
     setup_mesh(meshDesc);
 
     Ioss::PropertyManager props;
-    auto                  copy_opts = get_default_mesh_copy_options();
-    write_region_to_file(get_mesh().get_region(), props, copy_opts, outputFile);
+    write_region_to_file(get_mesh().get_region(), props, outputFile);
 
     int         argc = 0;
     const char *argv[20];
