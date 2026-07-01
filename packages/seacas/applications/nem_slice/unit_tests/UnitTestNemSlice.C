@@ -9,6 +9,7 @@
 #endif
 #include "gtest/gtest.h"
 
+#include "ArgvBuilder.h"
 #include "FileUtils.h"
 #include "MeshFixture.h"
 #include "elb_nem_slice.h"
@@ -56,24 +57,20 @@ namespace {
     Ioss::PropertyManager props;
     write_region_to_file(get_mesh().get_region(), props, outputFile);
 
-    int         argc = 0;
-    const char *argv[20];
+    utest_util::ArgvBuilder builder;
+    builder.addArgument("nem_slice_unit_test");
+    builder.addArgument("-e");
+    builder.addArgument("-m");
+    builder.addArgument("mesh=2");
+    builder.addArgument("-l");
+    builder.addArgument("random");
+    builder.addArgument("-o");
+    builder.addArgument("edge2.Mesh.8.nem");
+    builder.addArgument(outputFile.c_str());
 
-    clear_args(argc, argv);
+    NemSlice<int> ns(builder.argc(), builder.argv());
 
-    add_arg(argc, argv, "nem_slice_unit_test");
-    add_arg(argc, argv, "-e");
-    add_arg(argc, argv, "-m");
-    add_arg(argc, argv, "mesh=2");
-    add_arg(argc, argv, "-l");
-    add_arg(argc, argv, "random");
-    add_arg(argc, argv, "-o");
-    add_arg(argc, argv, "edge2.Mesh.8.nem");
-    add_arg(argc, argv, outputFile.c_str());
-
-    NemSlice<int> ns(argc, const_cast<char **>(argv));
     ns.setup();
-    std::cout << "ns.lb.type = " << static_cast<int>(ns.lb.type) << "\n";
     ns.find_graph();
     ns.find_load_balance();
 

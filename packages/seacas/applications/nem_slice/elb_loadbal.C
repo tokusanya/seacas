@@ -34,9 +34,6 @@
 #include "fix_column_partitions.h"
 #include "vector_data.h"
 
-
-#include <iostream>
-
 using suplib_cpp::Data;
 
 #ifndef M_PI
@@ -1582,10 +1579,8 @@ namespace {
                   categorized[ecnt] = 1;
                 }
                 lb->e_cmap_elems[proc2].push_back(elem);
-                //auto value = get_node_conn_index(mesh, elem, side_nodes[0]);
-                std::cout << "Putting values in e_cmap_sides\n";
-                lb->e_cmap_sides[proc2].push_back(2 - ncnt);
-                //lb->e_cmap_sides[proc2].push_back(value);
+                auto value = get_node_conn_index(mesh, elem, side_nodes[0]);
+                lb->e_cmap_sides[proc2].push_back(value);
                 lb->e_cmap_procs[proc2].push_back(proce);
                 lb->e_cmap_neigh[proc2].push_back(ecnt);
               }

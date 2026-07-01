@@ -122,7 +122,7 @@ namespace utest_util {
                                                                         unsigned numProcs,
                                                                         bool     singleBlock);
 
-    template <size_t size> void clear_args(int &argc, const char *(&argv)[size])
+    /*template <size_t size> void clear_args(int &argc, const char *(&argv)[size])
     {
       argc = 0;
 
@@ -136,7 +136,7 @@ namespace utest_util {
       ThrowRequireWithMsg(argc < size, "Argument limit of " << size << " has been reached");
 
       argv[argc++] = arg;
-    }
+    }*/
 
   protected:
     void add_material_property_to_element_block(Ioss::Region *region, const std::string &blockName,

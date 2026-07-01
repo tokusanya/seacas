@@ -9,6 +9,7 @@
 #endif
 #include "gtest/gtest.h"
 
+#include "ArgvBuilder.h"
 #include "FileUtils.h"
 #include "MeshFixture.h"
 
@@ -440,22 +441,20 @@ namespace {
       add_material_property_to_element_block(inputRegion, "block_1", m_propertyName,
                                              m_propertyValue);
 
-      int         argc = 0;
-      const char *argv[10];
+      utest_util::ArgvBuilder builder;
+      builder.addArgument("epu_unit_test");
+      builder.addArgument("-extension");
+      builder.addArgument("g");
+      builder.addArgument("-processor_count");
+      builder.addArgument("2");
+      builder.addArgument(uniqueBaseName.c_str());
+      builder.addArgument("-remove_file_per_rank_files");
+      builder.addArgument("-verify_valid_file");
+      builder.addArgument("-debug");
+      builder.addArgument("512");
 
-      clear_args(argc, argv);
-      add_arg(argc, argv, "epu_unit_test");
-      add_arg(argc, argv, "-extension");
-      add_arg(argc, argv, "g");
-      add_arg(argc, argv, "-processor_count");
-      add_arg(argc, argv, "2");
-      add_arg(argc, argv, uniqueBaseName.c_str());
-      add_arg(argc, argv, "-remove_file_per_rank_files");
-      add_arg(argc, argv, "-verify_valid_file");
-      add_arg(argc, argv, "-debug");
-      add_arg(argc, argv, "512");
-
-      EXPECT_TRUE(interFace.parse_options(argc, const_cast<char **>(argv)));
+      // EXPECT_TRUE(interFace.parse_options(argc, const_cast<char **>(argv)));
+      EXPECT_TRUE(interFace.parse_options(builder.argc(), builder.argv()));
       interFace.set_output_filename(m_outputFile);
 
       Ioss::PropertyManager properties = set_properties(interFace);
