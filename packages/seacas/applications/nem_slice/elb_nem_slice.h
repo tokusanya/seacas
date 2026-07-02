@@ -7,7 +7,7 @@
  */
 #pragma once
 
-#include "elb.h"         // for LB_Description<INT>, get_time, etc
+#include "elb.h" // for LB_Description<INT>, get_time, etc
 
 template <typename INT> class NemSlice
 {

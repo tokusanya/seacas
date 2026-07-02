@@ -7,8 +7,8 @@
  */
 
 #include "elb_nem_slice.h"
-#include <cstdint>
 #include <cstddef> // for size_t
+#include <cstdint>
 #include <cstdlib> // for free, exit, malloc
 #include <cstring> // for strcmp
 #include <stdexcept>
@@ -18,8 +18,8 @@
 #include "elb_elem.h"    // for ElementType, ::NULL_EL
 #include "elb_err.h"     // for error_report, Gen_Error, etc
 #include "elb_exo.h"     // for init_weight_struct, etc
-#include "elb_inp.h"     // for check_inp_specs, etc
 #include "elb_graph.h"   // for generate_graph
+#include "elb_inp.h"     // for check_inp_specs, etc
 #include "elb_loadbal.h" // for generate_loadbal, etc
 #include "elb_output.h"  // for write_nemesis, write_vis
 #include "fmt/ostream.h"

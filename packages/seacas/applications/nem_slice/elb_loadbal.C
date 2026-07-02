@@ -1414,8 +1414,8 @@ namespace {
   int get_node_conn_index(Mesh_Description<INT> *mesh, size_t elem, INT node)
   {
     ElementType etype  = mesh->elem_type[elem];
-    int nnodes = get_elem_info(ElementInfo::NNODES, etype);
-    const INT* conn = mesh->connect[elem];
+    int         nnodes = get_elem_info(ElementInfo::NNODES, etype);
+    const INT  *conn   = mesh->connect[elem];
     for (int i = 0; i < nnodes; i++) {
       if (conn[i] == node) {
         return i + 1;
