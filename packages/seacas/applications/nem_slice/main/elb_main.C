@@ -23,7 +23,6 @@
 #include "elb_err.h"    // for error_report, Gen_Error, etc
 #include "elb_exo.h"    // for init_weight_struct, etc
 #include "elb_graph.h"  // for generate_graph
-// #include "elb_internal_main.h"  // for internal_main
 #include "elb_inp.h"     // for check_inp_specs, etc
 #include "elb_loadbal.h" // for generate_loadbal, etc
 #include "elb_nem_slice.h"
@@ -92,7 +91,6 @@ int main(int argc, char *argv[])
                "Forcing 32-bit integer mode for decomposition even though database is 64-bit.\n");
     NemSlice<int> nem_slice(argc, argv);
     status = nem_slice.run();
-    // status = internal_main(argc, argv, int(0));
   }
   else if ((int64db != 0) || int64com) {
     fmt::print(stderr,
@@ -100,13 +98,11 @@ int main(int argc, char *argv[])
                "NOTE: Only 'linear' and 'scattered' methods are supported for 64-bit models\n");
     NemSlice<int64_t> nem_slice(argc, argv);
     status = nem_slice.run();
-    // status = internal_main(argc, argv, int64_t(0));
   }
   else {
     fmt::print(stderr, "Using 32-bit integer mode for decomposition...\n");
     NemSlice<int> nem_slice(argc, argv);
     status = nem_slice.run();
-    // status = internal_main(argc, argv, int(0));
   }
 
   /* Report any non-fatal errors that may have occurred */

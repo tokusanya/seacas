@@ -453,7 +453,6 @@ namespace {
       builder.addArgument("-debug");
       builder.addArgument("512");
 
-      // EXPECT_TRUE(interFace.parse_options(argc, const_cast<char **>(argv)));
       EXPECT_TRUE(interFace.parse_options(builder.argc(), builder.argv()));
       interFace.set_output_filename(m_outputFile);
 
