@@ -13,6 +13,7 @@
 #include "FileUtils.h"
 #include "MeshFixture.h"
 #include "elb_nem_slice.h"
+#include "unistd.h"
 
 namespace {
 
@@ -27,7 +28,21 @@ namespace {
 
     ~NemSliceTester() {}
 
-  protected:
+    void SetUp() override
+    {
+      optind = 1;
+#ifdef APPLE
+      optreset = 1;
+#endif
+    }
+
+    void TearDown() override
+    {
+      optind = 1;
+#ifdef APPLE
+      optreset = 1;
+#endif
+    }
   };
 
   TEST_F(NemSliceTester, emptyTest) {}
