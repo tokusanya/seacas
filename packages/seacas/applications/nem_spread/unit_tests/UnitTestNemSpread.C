@@ -9,6 +9,7 @@
 #endif
 #include "gtest/gtest.h"
 
+#include "ArgvBuilder.h"
 #include "ElementPartition.h"
 #include "FileUtils.h"
 #include "MeshFixture.h"
@@ -427,21 +428,17 @@ namespace {
 
       std::string numProcString = std::to_string(numProcs);
 
-      int         argc = 0;
-      const char *argv[20];
-
-      clear_args(argc, argv);
-
-      add_arg(argc, argv, "nem_spread_unit_test");
-      add_arg(argc, argv, m_pexFile.c_str());
-      add_arg(argc, argv, "-n");
-      add_arg(argc, argv, numProcString.c_str());
+      utest_util::ArgvBuilder builder;
+      builder.addArgument("nem_spread_unit_test");
+      builder.addArgument(m_pexFile.c_str());
+      builder.addArgument("-n");
+      builder.addArgument(numProcString.c_str());
 
       if (is64Bit) {
-        add_arg(argc, argv, "-64");
+        builder.addArgument("-64");
       }
 
-      parse_options(argc, const_cast<char **>(argv));
+      parse_options(builder.argc(), builder.argv());
     }
 
     void create_and_verify_input_mesh_file(const std::string &meshDesc)
