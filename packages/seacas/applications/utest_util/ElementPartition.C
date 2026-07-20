@@ -74,11 +74,10 @@ namespace utest_util {
     return lowerBound->proc;
   }
 
-  template <typename INT>
-  int ElementPartition<INT>::get_node_conn_index(size_t elem, INT node)
+  template <typename INT> int ElementPartition<INT>::get_node_conn_index(size_t elem, INT node)
   {
     IossElementData elemData = m_mesh->get_local_element(elem);
-    int               nnodes = elemData.topology->number_nodes();
+    int             nnodes   = elemData.topology->number_nodes();
 
     for (int i = 0; i < nnodes; i++) {
       if (elemData.localConnectivity[i] == node) {

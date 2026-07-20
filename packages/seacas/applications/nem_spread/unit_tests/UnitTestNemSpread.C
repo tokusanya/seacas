@@ -65,22 +65,15 @@ int nem_spread(NemSpread<T, INT> &spreader, const char *salsa_cmd_file, int subc
 #include <fmt/ostream.h>
 
 namespace {
-  enum PartitionType {LINEAR, ROUND_ROBIN, RANDOM};
+  enum PartitionType { LINEAR, ROUND_ROBIN, RANDOM };
 
-  inline std::ostream& operator<<(std::ostream& os, PartitionType type) {
+  inline std::ostream &operator<<(std::ostream &os, PartitionType type)
+  {
     switch (type) {
-    case LINEAR:
-      os << "LINEAR";
-      break;
-    case ROUND_ROBIN:
-      os << "ROUND_ROBIN";
-      break;
-    case RANDOM:
-      os << "RANDOM";
-      break;
-    default:
-      os << "UNKNOWN";
-      break;
+    case LINEAR: os << "LINEAR"; break;
+    case ROUND_ROBIN: os << "ROUND_ROBIN"; break;
+    case RANDOM: os << "RANDOM"; break;
+    default: os << "UNKNOWN"; break;
     }
     return os;
   }
@@ -416,7 +409,7 @@ namespace {
 
     std::vector<utest_util::EntityProc> get_element_partition(const PartitionType type)
     {
-      switch(type) {
+      switch (type) {
       case LINEAR: return get_linear_element_partition(); break;
       case ROUND_ROBIN: return get_round_robin_element_partition(); break;
       case RANDOM: return get_random_element_partition(); break;
@@ -476,7 +469,7 @@ namespace {
 
     std::vector<utest_util::EntityProc> get_node_partition(const PartitionType type)
     {
-      switch(type) {
+      switch (type) {
       case LINEAR: return get_linear_node_partition(); break;
       case ROUND_ROBIN: return get_round_robin_node_partition(); break;
       case RANDOM: return get_random_node_partition(); break;
@@ -567,7 +560,8 @@ namespace {
       }
     }
 
-    void setup_input_files_for_element_decompsition(const std::string &meshDesc, PartitionType type = LINEAR)
+    void setup_input_files_for_element_decompsition(const std::string &meshDesc,
+                                                    PartitionType      type = LINEAR)
     {
       // Create mesh file
       create_and_verify_input_mesh_file(meshDesc);
@@ -579,7 +573,8 @@ namespace {
       create_element_partitioning(type);
     }
 
-    void setup_input_files_for_node_decompsition(const std::string &meshDesc, PartitionType type = LINEAR)
+    void setup_input_files_for_node_decompsition(const std::string &meshDesc,
+                                                 PartitionType      type = LINEAR)
     {
       // Create mesh file
       create_and_verify_input_mesh_file(meshDesc);
