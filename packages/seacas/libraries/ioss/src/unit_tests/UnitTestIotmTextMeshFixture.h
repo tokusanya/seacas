@@ -259,8 +259,7 @@ namespace Iotm {
         }
       }
 
-      template <typename INT>
-      bool verify_single_node_impl(EntityId nodeId) const
+      template <typename INT> bool verify_single_node_impl(EntityId nodeId) const
       {
         std::vector<INT> nodeIds;
 
@@ -272,8 +271,9 @@ namespace Iotm {
         size_t nodeCount = nodeIds.size();
 
         for (size_t i = 0; i < nodeCount; ++i) {
-          auto id   = static_cast<EntityId>(nodeIds[i]);
-          if(id == nodeId) return true;
+          auto id = static_cast<EntityId>(nodeIds[i]);
+          if (id == nodeId)
+            return true;
         }
 
         return false;
